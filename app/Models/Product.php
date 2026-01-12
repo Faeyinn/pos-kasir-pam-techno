@@ -15,7 +15,8 @@ class Product extends Model
         'wholesale_unit',
         'wholesale_qty_per_unit',
         'stock',
-        'is_active'
+        'is_active',
+        'tags'
     ];
 
     protected $casts = [
@@ -23,7 +24,8 @@ class Product extends Model
         'price' => 'integer',
         'wholesale' => 'integer',
         'stock' => 'integer',
-        'wholesale_qty_per_unit' => 'integer'
+        'wholesale_qty_per_unit' => 'integer',
+        'tags' => 'array'
     ];
 
     public function transactionItems()

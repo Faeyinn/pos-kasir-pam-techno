@@ -8,6 +8,7 @@ document.addEventListener("alpine:init", () => {
         // --- State ---
         searchQuery: "",
         selectedCategory: "all",
+        selectedTags: [],
         cart: [],
         showPaymentModal: false,
         showReceiptModal: false,
@@ -64,6 +65,7 @@ document.addEventListener("alpine:init", () => {
                         wholesaleQtyPerUnit: p.wholesale_qty_per_unit,
                         category: p.category,
                         stock: p.stock,
+                        tags: p.tags || [],
                     }));
                 }
             } catch (error) {
@@ -77,14 +79,52 @@ document.addEventListener("alpine:init", () => {
 
         get filteredProducts() {
             return this.products.filter((p) => {
-                const matchSearch = p.name
-                    .toLowerCase()
-                    .includes(this.searchQuery.toLowerCase());
+                const query = this.searchQuery.toLowerCase();
+
+                // 1. Logic Pencarian Manual (Search Bar) - Expanded
+                const matchName = p.name.toLowerCase().includes(query);
+                const matchCategoryInSearch = p.category.toLowerCase().includes(query);
+                const matchTagInSearch = p.tags && p.tags.some(t => t.toLowerCase().includes(query));
+
+                const matchSearch = !query || matchName || matchCategoryInSearch || matchTagInSearch;
+
+                // 2. Logic Kategori Tab (e.g. Minuman, Makanan)
                 const matchCategory =
                     this.selectedCategory === "all" ||
                     p.category === this.selectedCategory;
-                return matchSearch && matchCategory;
+
+                // 3. Logic Filter Dropdown (Multi-Tags AND Logic)
+                const matchTags =
+                    this.selectedTags.length === 0 ||
+                    this.selectedTags.every(
+                        (tag) => p.tags && p.tags.includes(tag)
+                    );
+
+                // 4. Syarat Akhir: (Logic Search) DAN (Logic Kategori) DAN (Logic Multi-Tags)
+                return matchSearch && matchCategory && matchTags;
             });
+        },
+
+        get uniqueTags() {
+            const tags = new Set();
+            this.products.forEach((p) => {
+                if (p.tags) p.tags.forEach((t) => tags.add(t));
+            });
+            return Array.from(tags).sort();
+        },
+
+        toggleTag(tag) {
+            if (this.selectedTags.includes(tag)) {
+                this.selectedTags = this.selectedTags.filter((t) => t !== tag);
+            } else {
+                this.selectedTags.push(tag);
+            }
+            this.$nextTick(() => window.lucide && lucide.createIcons());
+        },
+
+        resetTags() {
+            this.selectedTags = [];
+            this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
         // --- Cart Module ---
@@ -382,10 +422,10 @@ document.addEventListener("alpine:init", () => {
                 receipt.paymentMethod === "tunai"
                     ? "Tunai"
                     : receipt.paymentMethod === "kartu"
-                    ? "Kartu"
-                    : receipt.paymentMethod === "qris"
-                    ? "QRIS"
-                    : "E-Wallet";
+                        ? "Kartu"
+                        : receipt.paymentMethod === "qris"
+                            ? "QRIS"
+                            : "E-Wallet";
 
             const transactionType =
                 this.paymentType === "wholesale" ? "GROSIR" : "RETAIL";
@@ -413,18 +453,14 @@ document.addEventListener("alpine:init", () => {
                         <div class="separator">================================</div>
                     </div>
                     <div style="margin: 8px 0;">
-                        <div class="row"><span>No. Transaksi</span><span class="bold">${
-                            receipt.transactionNumber
-                        }</span></div>
-                        <div class="row"><span>Tanggal</span><span>${
-                            receipt.date
-                        }</span></div>
-                        <div class="row"><span>Waktu</span><span>${
-                            receipt.time
-                        }</span></div>
-                        <div class="row"><span>Kasir</span><span>${
-                            receipt.cashier
-                        }</span></div>
+                        <div class="row"><span>No. Transaksi</span><span class="bold">${receipt.transactionNumber
+                }</span></div>
+                        <div class="row"><span>Tanggal</span><span>${receipt.date
+                }</span></div>
+                        <div class="row"><span>Waktu</span><span>${receipt.time
+                }</span></div>
+                        <div class="row"><span>Kasir</span><span>${receipt.cashier
+                }</span></div>
                         <div class="row"><span>Jenis</span><span class="bold">${transactionType}</span></div>
                     </div>
                     <div class="separator">================================</div>
@@ -432,20 +468,20 @@ document.addEventListener("alpine:init", () => {
                     <div class="separator">================================</div>
                     <div style="margin: 8px 0;">
                         <div class="row"><span>Total</span><span class="bold">Rp ${this.formatNumber(
-                            receipt.total
-                        )}</span></div>
+                    receipt.total
+                )}</span></div>
                         <div class="row"><span>Bayar</span><span>${paymentMethodText}</span></div>
                         <div class="row"><span>Diterima</span><span>Rp ${this.formatNumber(
-                            receipt.amountReceived
-                        )}</span></div>
+                    receipt.amountReceived
+                )}</span></div>
                         <div class="row"><span>Kembalian</span><span class="bold">Rp ${this.formatNumber(
-                            receipt.change
-                        )}</span></div>
+                    receipt.change
+                )}</span></div>
                     </div>
                     <div class="separator">================================</div>
                     <div class="row grand-total"><span>GRAND TOTAL</span><span>Rp ${this.formatNumber(
-                        receipt.total
-                    )}</span></div>
+                    receipt.total
+                )}</span></div>
                     <div class="separator">================================</div>
                     <div class="center" style="margin-top: 8px;">
                         <div class="subtitle">Terima kasih atas kunjungan Anda</div>
