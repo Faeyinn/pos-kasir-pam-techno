@@ -23,6 +23,15 @@
 
 
 
+        <button 
+            @click="$dispatch('open-history')"
+            class="hidden md:flex items-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-100 transition-colors group"
+            title="Riwayat Transaksi"
+        >
+            <i data-lucide="history" class="w-4 h-4 text-blue-600"></i>
+            <span class="text-xs font-bold text-blue-600">Riwayat</span>
+        </button>
+
         <div class="flex items-center gap-4 pl-6 border-l border-gray-100">
             <div class="text-right hidden sm:block">
                 <div class="font-bold text-sm text-gray-900">{{ Auth::user()->name }}</div>
