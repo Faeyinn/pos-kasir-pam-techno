@@ -9,6 +9,7 @@
     x-data="kasirSystem"
     x-on:open-history.window="showHistoryModal = true; $nextTick(() => lucide.createIcons())"
     x-on:payment-type-changed.window="paymentType = $event.detail; $nextTick(() => lucide.createIcons())"
+    x-on:scan-success.window="handleBarcodeScan($event.detail)"
 >
     <!-- Main Content Area -->
     <div class="flex-1 min-h-0 flex flex-col md:flex-row gap-4 sm:gap-6 relative">

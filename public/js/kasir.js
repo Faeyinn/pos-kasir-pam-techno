@@ -127,6 +127,25 @@ document.addEventListener("alpine:init", () => {
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
+        // --- Scanner Module ---
+        handleBarcodeScan(code) {
+            console.log("Handling scan:", code);
+            // Search logic: ID or Name (Exact Match)
+            const product = this.products.find(p =>
+                p.id == code ||
+                p.name.toLowerCase() === code.toLowerCase()
+            );
+
+            if (product) {
+                this.addToCart(product);
+                this.addNotification(`Produk ditambahkan: ${product.name}`, 'success');
+
+                // Optional: Play beep if not handled in modal
+            } else {
+                this.addNotification(`Produk tidak ditemukan: ${code}`, 'error');
+            }
+        },
+
         // --- Cart Module ---
         addToCart(product) {
             const existingItem = this.cart.find(

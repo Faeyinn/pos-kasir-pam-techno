@@ -47,65 +47,91 @@
         </button>
     </div>
     
-    <!-- Sidebar Nav -->
-    <nav class="flex-1 p-3 space-y-4 overflow-y-auto custom-scrollbar">
-        <div x-show="sidebarOpen" class="px-4 py-4 text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] transition-opacity">Menu Utama</div>
-        
-        <!-- Retail Mode Button -->
-        <button 
-            @click="paymentType = 'retail'; $dispatch('payment-type-changed', 'retail'); if(window.innerWidth < 1024) sidebarOpen = false"
-            class="w-full flex items-center rounded-2xl transition-all group relative overflow-hidden"
-            :class="{
-                'bg-blue-600 text-white shadow-xl shadow-blue-900/40': paymentType === 'retail',
-                'hover:bg-white/5 text-white/60 hover:text-white': paymentType !== 'retail',
-                'p-4 gap-4': sidebarOpen,
-                'p-3 justify-center': !sidebarOpen
-            }"
-            :title="!sidebarOpen ? 'Retail' : ''"
-        >
-            <div :class="paymentType === 'retail' ? 'bg-white/20' : 'bg-white/5 group-hover:bg-white/10'" class="p-2.5 rounded-xl transition-colors shrink-0 shadow-sm">
-                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-            </div>
-            <div 
-                class="text-left transition-all duration-300 origin-left" 
-                x-show="sidebarOpen"
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 -translate-x-4"
-                x-transition:enter-end="opacity-100 translate-x-0"
+    <!-- Sidebar Body (Relative Container for Centering) -->
+    <div class="flex-1 relative w-full overflow-hidden">
+        <!-- Scrollable Nav -->
+        <nav class="absolute inset-0 p-3 space-y-4 overflow-y-auto custom-scrollbar pb-24">
+            <div x-show="sidebarOpen" class="px-4 py-4 text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] transition-opacity">Menu Utama</div>
+            
+            <!-- Retail Mode Button -->
+            <button 
+                @click="paymentType = 'retail'; $dispatch('payment-type-changed', 'retail'); if(window.innerWidth < 1024) sidebarOpen = false"
+                class="w-full flex items-center rounded-2xl transition-all group relative overflow-hidden"
+                :class="{
+                    'bg-blue-600 text-white shadow-xl shadow-blue-900/40': paymentType === 'retail',
+                    'hover:bg-white/5 text-white/60 hover:text-white': paymentType !== 'retail',
+                    'p-4 gap-4': sidebarOpen,
+                    'p-3 justify-center': !sidebarOpen
+                }"
+                :title="!sidebarOpen ? 'Retail' : ''"
             >
-                <div class="font-bold text-sm whitespace-nowrap">Retail / Eceran</div>
-                <div class="text-[10px] opacity-60 font-medium whitespace-nowrap">Harga standar</div>
-            </div>
-        </button>
-
-        <!-- Wholesale Mode Button -->
-        <button 
-            @click="paymentType = 'wholesale'; $dispatch('payment-type-changed', 'wholesale'); if(window.innerWidth < 1024) sidebarOpen = false"
-            class="w-full flex items-center rounded-2xl transition-all group relative overflow-hidden"
-            :class="{
-                'bg-purple-600 text-white shadow-xl shadow-purple-900/40': paymentType === 'wholesale',
-                'hover:bg-white/5 text-white/60 hover:text-white': paymentType !== 'wholesale',
-                'p-4 gap-4': sidebarOpen,
-                'p-3 justify-center': !sidebarOpen
-            }"
-            :title="!sidebarOpen ? 'Grosir' : ''"
-        >
-            <div :class="paymentType === 'wholesale' ? 'bg-white/20' : 'bg-white/5 group-hover:bg-white/10'" class="p-2.5 rounded-xl transition-colors shrink-0 shadow-sm">
-                <i data-lucide="package" class="w-5 h-5"></i>
-            </div>
-            <div 
-                class="text-left transition-all duration-300 origin-left" 
-                x-show="sidebarOpen"
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 -translate-x-4"
-                x-transition:enter-end="opacity-100 translate-x-0"
-            >
-                <div class="font-bold text-sm whitespace-nowrap">Grosir / Partai</div>
-                <div class="text-[10px] opacity-60 font-medium whitespace-nowrap">Harga borongan</div>
-            </div>
-        </button>
-    </nav>
+                <div :class="paymentType === 'retail' ? 'bg-white/20' : 'bg-white/5 group-hover:bg-white/10'" class="p-2.5 rounded-xl transition-colors shrink-0 shadow-sm">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                </div>
+                <div 
+                    class="text-left transition-all duration-300 origin-left" 
+                    x-show="sidebarOpen"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 -translate-x-4"
+                    x-transition:enter-end="opacity-100 translate-x-0"
+                >
+                    <div class="font-bold text-sm whitespace-nowrap">Retail / Eceran</div>
+                    <div class="text-[10px] opacity-60 font-medium whitespace-nowrap">Harga standar</div>
+                </div>
+            </button>
     
+            <!-- Wholesale Mode Button -->
+            <button 
+                @click="paymentType = 'wholesale'; $dispatch('payment-type-changed', 'wholesale'); if(window.innerWidth < 1024) sidebarOpen = false"
+                class="w-full flex items-center rounded-2xl transition-all group relative overflow-hidden"
+                :class="{
+                    'bg-purple-600 text-white shadow-xl shadow-purple-900/40': paymentType === 'wholesale',
+                    'hover:bg-white/5 text-white/60 hover:text-white': paymentType !== 'wholesale',
+                    'p-4 gap-4': sidebarOpen,
+                    'p-3 justify-center': !sidebarOpen
+                }"
+                :title="!sidebarOpen ? 'Grosir' : ''"
+            >
+                <div :class="paymentType === 'wholesale' ? 'bg-white/20' : 'bg-white/5 group-hover:bg-white/10'" class="p-2.5 rounded-xl transition-colors shrink-0 shadow-sm">
+                    <i data-lucide="package" class="w-5 h-5"></i>
+                </div>
+                <div 
+                    class="text-left transition-all duration-300 origin-left" 
+                    x-show="sidebarOpen"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 -translate-x-4"
+                    x-transition:enter-end="opacity-100 translate-x-0"
+                >
+                    <div class="font-bold text-sm whitespace-nowrap">Grosir / Partai</div>
+                    <div class="text-[10px] opacity-60 font-medium whitespace-nowrap">Harga borongan</div>
+                </div>
+            </button>
+        </nav>
+    
+        <!-- Centered Scan Button (Absolute) -->
+        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full flex justify-center">
+            <button 
+                @click="openScanner()"
+                class="group w-14 h-14 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50 hover:scale-110 transition-transform duration-300 pointer-events-auto"
+                title="Scan QR/Barcode"
+            >
+                <!-- Custom SVG Scanner Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Outer Brackets -->
+                    <path d="M4 8V6a2 2 0 0 1 2-2h2" />
+                    <path d="M16 4h2a2 2 0 0 1 2 2v2" />
+                    <path d="M20 16v2a2 2 0 0 1-2 2h-2" />
+                    <path d="M8 20H6a2 2 0 0 1-2-2v-2" />
+                    <!-- Inner Box (Product) -->
+                    <path d="M10 10V9a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" />
+                    <path d="M14 14v1a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-1" />
+                    <!-- Scan Line -->
+                    <path d="M12 12h.01" /> 
+                    <path d="M7 12h10" />
+                </svg>
+            </button>
+        </div>
+    </div>
     <!-- Sidebar Footer -->
     <div class="p-4 border-t border-white/5 bg-slate-900/50 backdrop-blur-md">
         <form action="{{ route('logout') }}" method="POST">
