@@ -22,6 +22,14 @@
                     this.selectedPaymentMethod = 'tunai';
                 }
             });
+
+            this.$watch('selectedPaymentMethod', (value) => {
+                if (value !== 'tunai') {
+                    this.amountReceived = cartTotal.toString();
+                } else {
+                    this.amountReceived = '';
+                }
+            });
         }
     }"
 >
@@ -120,19 +128,39 @@
 
             <!-- Bottom: Jumlah yang Diterima -->
             <div class="border border-gray-200 rounded-2xl p-6">
-                <h3 class="text-base font-bold text-gray-800 mb-4">Jumlah yang Diterima</h3>
+                <div class="flex items-center gap-4 mb-4">
+                    <h3 class="text-base font-bold text-gray-800">Jumlah yang Diterima</h3>
+                    <button 
+                        x-show="selectedPaymentMethod === 'tunai'"
+                        @click="amountReceived = cartTotal.toString()"
+                        class="px-4 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-blue-100 transition-all active:scale-95 whitespace-nowrap"
+                    >
+                        Uang Pas
+                    </button>
+                </div>
                 
                 <div class="flex items-center gap-6">
                     <div class="flex-1">
-                        <div class="relative">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">Rp</span>
-                            <input 
-                                type="text" 
-                                x-model="amountReceived"
-                                @input="amountReceived = amountReceived.replace(/[^0-9]/g, '')"
-                                placeholder="0"
-                                class="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl text-lg font-bold text-gray-900 focus:outline-none focus:border-blue-500 transition-colors"
-                            >
+                        <div class="relative flex items-center gap-3">
+                            <div class="relative flex-1 group">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">Rp</span>
+                                <input 
+                                    type="text" 
+                                    x-model="amountReceived"
+                                    @input="amountReceived = amountReceived.replace(/[^0-9]/g, '')"
+                                    placeholder="0"
+                                    class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-xl text-lg font-bold text-gray-900 focus:outline-none focus:border-blue-500 transition-colors"
+                                >
+                                <!-- Clear Button -->
+                                <button 
+                                    x-show="amountReceived.length > 0"
+                                    @click="amountReceived = ''; $nextTick(() => window.lucide && lucide.createIcons())"
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-all active:scale-90"
+                                    type="button"
+                                >
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="mt-2 text-sm">
                             <span class="text-gray-600">Kembalian: </span>
