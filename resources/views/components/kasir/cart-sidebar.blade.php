@@ -1,6 +1,6 @@
 <div 
-    class="fixed inset-0 z-40 bg-gray-900/10 md:relative md:bg-transparent md:z-20 md:w-[310px] lg:w-[360px] shrink-0 h-full"
-    :class="mobileCartOpen ? 'flex justify-end' : 'hidden md:block'"
+    class="fixed inset-0 z-40 bg-gray-900/10 lg:relative lg:bg-transparent lg:z-20 lg:w-[380px] shrink-0 h-full"
+    :class="mobileCartOpen ? 'flex justify-end' : 'hidden lg:block'"
     @click.self="mobileCartOpen = false"
 >
     <div 

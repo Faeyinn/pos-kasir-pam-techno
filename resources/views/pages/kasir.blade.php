@@ -12,7 +12,7 @@
     x-on:scan-success.window="handleBarcodeScan($event.detail)"
 >
     <!-- Main Content Area -->
-    <div class="flex-1 min-h-0 flex flex-col md:flex-row gap-4 sm:gap-6 relative">
+    <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 sm:gap-6 relative">
         
         <!-- Left Section: Products Selection -->
         <div class="flex-1 flex flex-col gap-4 min-w-0 h-full">
@@ -28,7 +28,7 @@
     <!-- Mobile Floating Cart Button -->
     <button 
         x-on:click="mobileCartOpen = true"
-        class="md:hidden fixed bottom-6 right-6 w-16 h-16 bg-slate-900 text-white rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-center z-30 active:scale-90 transition-transform"
+        class="lg:hidden fixed bottom-6 right-6 w-16 h-16 bg-slate-900 text-white rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-center z-30 active:scale-90 transition-transform"
     >
         <div class="relative">
             <i data-lucide="shopping-bag" class="w-7 h-7"></i>

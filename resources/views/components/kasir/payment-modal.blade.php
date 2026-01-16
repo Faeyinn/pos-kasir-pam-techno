@@ -8,6 +8,7 @@
     x-transition:leave-end="opacity-0"
     class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
     @click.self="showPaymentModal = false"
+    x-cloak
     x-data="{
         selectedPaymentMethod: 'tunai',
         amountReceived: '',
@@ -49,9 +50,19 @@
                 </button>
                 <h2 class="text-2xl font-bold text-gray-900">Pembayaran</h2>
             </div>
-            <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-gray-200">
-                <i data-lucide="user" class="w-4 h-4 text-gray-400"></i>
-                <span class="text-sm font-semibold text-gray-600">Kasir</span>
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-gray-200">
+                    <i data-lucide="user" class="w-4 h-4 text-gray-400"></i>
+                    <span class="text-sm font-semibold text-gray-600">Kasir</span>
+                </div>
+                <!-- Top Right Close Button -->
+                <button 
+                    @click="showPaymentModal = false" 
+                    class="p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors group"
+                    title="Tutup Popup"
+                >
+                    <i data-lucide="x" class="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors"></i>
+                </button>
             </div>
         </div>
 

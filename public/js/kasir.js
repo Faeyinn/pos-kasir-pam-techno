@@ -7,7 +7,10 @@ document.addEventListener("alpine:init", () => {
     Alpine.data("kasirSystem", () => ({
         // --- State ---
         searchQuery: "",
-        selectedCategory: "all",
+
+        searchQuery: "",
+        viewMode: "grid", // 'grid' | 'list'
+
         selectedTags: [],
         cart: [],
         showPaymentModal: false,
@@ -27,9 +30,6 @@ document.addEventListener("alpine:init", () => {
             this.fetchProducts();
             this.fetchTransactionHistory();
 
-            this.$watch("selectedCategory", () =>
-                this.$nextTick(() => window.lucide && lucide.createIcons())
-            );
             this.$watch("searchQuery", () =>
                 this.$nextTick(() => window.lucide && lucide.createIcons())
             );
@@ -63,9 +63,14 @@ document.addEventListener("alpine:init", () => {
                         wholesale: p.wholesale,
                         wholesaleUnit: p.wholesale_unit,
                         wholesaleQtyPerUnit: p.wholesale_qty_per_unit,
-                        category: p.category,
+
                         stock: p.stock,
                         tags: p.tags || [],
+                        // Calculated field for price per piece when wholesale condition met
+                        wholesalePricePerPiece:
+                            p.wholesale_qty_per_unit > 0
+                                ? p.wholesale / p.wholesale_qty_per_unit
+                                : p.price,
                     }));
                 }
             } catch (error) {
@@ -83,15 +88,12 @@ document.addEventListener("alpine:init", () => {
 
                 // 1. Logic Pencarian Manual (Search Bar) - Expanded
                 const matchName = p.name.toLowerCase().includes(query);
-                const matchCategoryInSearch = p.category.toLowerCase().includes(query);
-                const matchTagInSearch = p.tags && p.tags.some(t => t.toLowerCase().includes(query));
 
-                const matchSearch = !query || matchName || matchCategoryInSearch || matchTagInSearch;
+                const matchTagInSearch =
+                    p.tags &&
+                    p.tags.some((t) => t.toLowerCase().includes(query));
 
-                // 2. Logic Kategori Tab (e.g. Minuman, Makanan)
-                const matchCategory =
-                    this.selectedCategory === "all" ||
-                    p.category === this.selectedCategory;
+                const matchSearch = !query || matchName || matchTagInSearch;
 
                 // 3. Logic Filter Dropdown (Multi-Tags AND Logic)
                 const matchTags =
@@ -100,8 +102,8 @@ document.addEventListener("alpine:init", () => {
                         (tag) => p.tags && p.tags.includes(tag)
                     );
 
-                // 4. Syarat Akhir: (Logic Search) DAN (Logic Kategori) DAN (Logic Multi-Tags)
-                return matchSearch && matchCategory && matchTags;
+                // 4. Syarat Akhir: (Logic Search) DAN (Logic Multi-Tags)
+                return matchSearch && matchTags;
             });
         },
 
@@ -111,6 +113,24 @@ document.addEventListener("alpine:init", () => {
                 if (p.tags) p.tags.forEach((t) => tags.add(t));
             });
             return Array.from(tags).sort();
+        },
+
+        get popularTags() {
+            // Count tag frequency
+            const tagCounts = {};
+            this.products.forEach((p) => {
+                if (p.tags) {
+                    p.tags.forEach((t) => {
+                        tagCounts[t] = (tagCounts[t] || 0) + 1;
+                    });
+                }
+            });
+
+            // Sort by frequency and take top 5
+            return Object.entries(tagCounts)
+                .sort((a, b) => b[1] - a[1]) // Sort descending by count
+                .slice(0, 5) // Take top 5
+                .map((entry) => entry[0]); // Return tag names
         },
 
         toggleTag(tag) {
@@ -131,18 +151,24 @@ document.addEventListener("alpine:init", () => {
         handleBarcodeScan(code) {
             console.log("Handling scan:", code);
             // Search logic: ID or Name (Exact Match)
-            const product = this.products.find(p =>
-                p.id == code ||
-                p.name.toLowerCase() === code.toLowerCase()
+            const product = this.products.find(
+                (p) =>
+                    p.id == code || p.name.toLowerCase() === code.toLowerCase()
             );
 
             if (product) {
                 this.addToCart(product);
-                this.addNotification(`Produk ditambahkan: ${product.name}`, 'success');
+                this.addNotification(
+                    `Produk ditambahkan: ${product.name}`,
+                    "success"
+                );
 
                 // Optional: Play beep if not handled in modal
             } else {
-                this.addNotification(`Produk tidak ditemukan: ${code}`, 'error');
+                this.addNotification(
+                    `Produk tidak ditemukan: ${code}`,
+                    "error"
+                );
             }
         },
 
@@ -151,33 +177,28 @@ document.addEventListener("alpine:init", () => {
             const existingItem = this.cart.find(
                 (item) => item.id === product.id
             );
-            const currentQty = existingItem ? existingItem.qty : 0;
 
-            const isWholesale =
-                this.paymentType === "wholesale" && product.wholesale > 0;
-            const multiplier = isWholesale ? product.wholesaleQtyPerUnit : 1;
-            const totalPcsNeeded = (currentQty + 1) * multiplier;
+            // Logic baru: Selalu tambah 1 unit (retail base)
+            // Jika quantity mencapai grosir, harga otomatis berubah di isWholesale/getItemPrice
+            const requestQty = 1;
 
-            if (totalPcsNeeded > product.stock) {
-                if (isWholesale) {
-                    const availableWholesale = Math.floor(
-                        product.stock / product.wholesaleQtyPerUnit
-                    );
+            if (existingItem) {
+                // Check stock for increment
+                if (existingItem.qty + requestQty > existingItem.stock) {
                     this.addNotification(
-                        `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${availableWholesale} ${product.wholesaleUnit}.`
+                        `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${existingItem.stock} unit.`
                     );
-                } else {
+                    return;
+                }
+                existingItem.qty += requestQty;
+            } else {
+                if (requestQty > product.stock) {
                     this.addNotification(
                         `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${product.stock} unit.`
                     );
+                    return;
                 }
-                return;
-            }
-
-            if (existingItem) {
-                existingItem.qty += 1;
-            } else {
-                this.cart.push({ ...product, qty: 1 });
+                this.cart.push({ ...product, qty: requestQty });
             }
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
@@ -185,25 +206,10 @@ document.addEventListener("alpine:init", () => {
         updateQty(productId, delta) {
             const item = this.cart.find((i) => i.id === productId);
             if (item) {
-                const isWholesaleMode =
-                    this.paymentType === "wholesale" && item.wholesale > 0;
-                const multiplier = isWholesaleMode
-                    ? item.wholesaleQtyPerUnit
-                    : 1;
-
-                if (delta > 0 && (item.qty + delta) * multiplier > item.stock) {
-                    if (isWholesaleMode) {
-                        const availableWholesale = Math.floor(
-                            item.stock / item.wholesaleQtyPerUnit
-                        );
-                        this.addNotification(
-                            `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${availableWholesale} ${item.wholesaleUnit}.`
-                        );
-                    } else {
-                        this.addNotification(
-                            `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${item.stock} unit.`
-                        );
-                    }
+                if (delta > 0 && item.qty + delta > item.stock) {
+                    this.addNotification(
+                        `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${item.stock} unit.`
+                    );
                     return;
                 }
                 item.qty += delta;
@@ -224,7 +230,9 @@ document.addEventListener("alpine:init", () => {
         },
 
         getItemPrice(item) {
-            return this.isWholesale(item) ? item.wholesale : item.price;
+            return this.isWholesale(item)
+                ? item.wholesalePricePerPiece
+                : item.price;
         },
 
         get cartTotal() {
@@ -239,9 +247,11 @@ document.addEventListener("alpine:init", () => {
         },
 
         isWholesale(item) {
+            // Otomatis grosir jika qty >= wholesaleQtyPerUnit dan fitur grosir tersedia
             return (
-                (this.paymentType === "wholesale" && item.wholesale > 0) ||
-                (item.wholesale > 0 && item.qty >= item.minWholesale)
+                item.wholesale > 0 &&
+                item.wholesaleQtyPerUnit > 0 &&
+                item.qty >= item.wholesaleQtyPerUnit
             );
         },
 
@@ -305,8 +315,14 @@ document.addEventListener("alpine:init", () => {
                 return;
             }
 
+            const effectivePaymentType = this.cart.some((item) =>
+                this.isWholesale(item)
+            )
+                ? "wholesale"
+                : "retail";
+
             const transactionData = {
-                payment_type: this.paymentType,
+                payment_type: effectivePaymentType,
                 payment_method:
                     paymentModalData.selectedPaymentMethod || "tunai",
                 amount_received: amountReceived,
@@ -426,13 +442,12 @@ document.addEventListener("alpine:init", () => {
             receipt.items.forEach((item) => {
                 const itemTotal = this.formatNumber(item.qty * item.finalPrice);
                 const itemPrice = this.formatNumber(item.finalPrice);
-                itemsHTML += `<div style="margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                        <span style="font-weight: bold; flex: 1;">${item.name}</span>
-                        <span style="font-weight: bold; white-space: nowrap;">Rp ${itemTotal}</span>
-                    </div>
-                    <div style="font-size: 8pt; color: #666;">
-                        ${item.qty} x Rp ${itemPrice}
+                // Grid layout for precise alignment
+                itemsHTML += `<div style="margin-bottom: 5px;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">${item.name}</div>
+                    <div style="display: grid; grid-template-columns: 1fr auto; width: 100%;">
+                        <div>${item.qty} x ${itemPrice}</div>
+                        <div style="text-align: right; font-weight: bold;">${itemTotal}</div>
                     </div>
                 </div>`;
             });
@@ -441,71 +456,129 @@ document.addEventListener("alpine:init", () => {
                 receipt.paymentMethod === "tunai"
                     ? "Tunai"
                     : receipt.paymentMethod === "kartu"
-                        ? "Kartu"
-                        : receipt.paymentMethod === "qris"
-                            ? "QRIS"
-                            : "E-Wallet";
+                    ? "Kartu"
+                    : receipt.paymentMethod === "qris"
+                    ? "QRIS"
+                    : "E-Wallet";
 
             const transactionType =
-                this.paymentType === "wholesale" ? "GROSIR" : "RETAIL";
+                receipt.paymentType === "wholesale" ? "GROSIR" : "RETAIL";
 
+            // Ultra-simple HTML for thermal printers
+            // Uses only basic fonts and black colors
             const htmlContent = `<!DOCTYPE html>
                 <html>
                 <head>
                     <title>Struk - ${receipt.transactionNumber}</title>
                     <style>
-                    @page { margin: 10mm; size: 80mm auto; }
-                    body { font-family: "Courier New", monospace; font-size: 9pt; line-height: 1.3; margin: 0; padding: 8px; width: 80mm; color: #000; }
-                    .center { text-align: center; }
-                    .separator { text-align: center; margin: 4px 0; letter-spacing: -1px; }
-                    .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                    .bold { font-weight: bold; }
-                    h1 { font-size: 14pt; font-weight: bold; margin: 2px 0; letter-spacing: 0.5px; }
-                    .subtitle { font-size: 8pt; margin: 2px 0; }
-                    .grand-total { font-size: 12pt; font-weight: bold; margin-top: 4px; }
+                        @page { margin: 0; size: 80mm auto; }
+                        body { 
+                            font-family: 'Courier New', Courier, monospace; 
+                            font-size: 11px; 
+                            line-height: 1.3; 
+                            margin: 0; 
+                            padding: 15px 10px; 
+                            width: 100%;
+                            background: #fff;
+                            color: #000;
+                            box-sizing: border-box;
+                        }
+                        .center { text-align: center; }
+                        .right { text-align: right; }
+                        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+                        .grid-2 { display: grid; grid-template-columns: 1fr auto; width: 100%; }
+                        .bold { font-weight: bold; }
+                        .divider { border-top: 1px dashed #333; margin: 8px 0; }
+                        .header { margin-bottom: 12px; }
+                        .footer { margin-top: 12px; font-size: 10px; color: #333; }
+                        .mb-1 { margin-bottom: 4px; }
+                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
                     </style>
                 </head>
                 <body>
-                    <div class="center">
-                        <h1>PAM TECHNO</h1>
-                        <div class="subtitle">Sistem Kasir Digital</div>
-                        <div class="separator">================================</div>
+                    <!-- Header -->
+                    <div class="center header">
+                        <div class="bold" style="font-size: 18px; margin-bottom: 4px;">PAM TECHNO</div>
+                        <div style="font-size: 11px;">Jalan Raya Gadut, Lubuk Kilangan</div>
+                        <div style="font-size: 11px;">Padang, Sumatera Barat</div>
                     </div>
-                    <div style="margin: 8px 0;">
-                        <div class="row"><span>No. Transaksi</span><span class="bold">${receipt.transactionNumber
-                }</span></div>
-                        <div class="row"><span>Tanggal</span><span>${receipt.date
-                }</span></div>
-                        <div class="row"><span>Waktu</span><span>${receipt.time
-                }</span></div>
-                        <div class="row"><span>Kasir</span><span>${receipt.cashier
-                }</span></div>
-                        <div class="row"><span>Jenis</span><span class="bold">${transactionType}</span></div>
+                    
+                    <div class="divider"></div>
+                    
+                    <!-- Meta Info -->
+                    <div class="grid-2 mb-1">
+                        <div>No Transaksi</div>
+                        <div class="bold">${receipt.transactionNumber}</div>
                     </div>
-                    <div class="separator">================================</div>
+                    <div class="grid-2 mb-1">
+                        <div>Tanggal</div>
+                        <div>${receipt.date}</div>
+                    </div>
+                    <div class="grid-2 mb-1">
+                        <div>Waktu</div>
+                        <div>${receipt.time}</div>
+                    </div>
+                    <div class="grid-2 mb-1">
+                        <div>Kasir</div>
+                        <div>${receipt.cashier}</div>
+                    </div>
+                    </div>
+                     <div class="grid-2 mb-1">
+                        <div>Tipe</div>
+                        <div class="bold">${transactionType}</div>
+                    </div>
+                     <div class="grid-2 mb-1">
+                        <div>Pembayaran</div>
+                        <div class="bold">${paymentMethodText}</div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <!-- Items -->
                     <div style="margin: 8px 0;">${itemsHTML}</div>
-                    <div class="separator">================================</div>
-                    <div style="margin: 8px 0;">
-                        <div class="row"><span>Total</span><span class="bold">Rp ${this.formatNumber(
-                    receipt.total
-                )}</span></div>
-                        <div class="row"><span>Bayar</span><span>${paymentMethodText}</span></div>
-                        <div class="row"><span>Diterima</span><span>Rp ${this.formatNumber(
-                    receipt.amountReceived
-                )}</span></div>
-                        <div class="row"><span>Kembalian</span><span class="bold">Rp ${this.formatNumber(
-                    receipt.change
-                )}</span></div>
+                    
+                    <div class="divider"></div>
+                    
+                    <!-- Totals -->
+                    <div class="grid-2 mb-1">
+                        <div>Total</div>
+                        <div class="bold">Rp ${this.formatNumber(
+                            receipt.total
+                        )}</div>
                     </div>
-                    <div class="separator">================================</div>
-                    <div class="row grand-total"><span>GRAND TOTAL</span><span>Rp ${this.formatNumber(
-                    receipt.total
-                )}</span></div>
-                    <div class="separator">================================</div>
-                    <div class="center" style="margin-top: 8px;">
-                        <div class="subtitle">Terima kasih atas kunjungan Anda</div>
-                        <div class="subtitle">Barang yang sudah dibeli</div>
-                        <div class="subtitle">tidak dapat dikembalikan</div>
+                    <div class="grid-2 mb-1">
+                        <div>Bayar (${paymentMethodText})</div>
+                        <div>Rp ${this.formatNumber(
+                            receipt.amountReceived
+                        )}</div>
+                    </div>
+                    <div class="grid-2 mb-1">
+                        <div>Kembali</div>
+                        <div class="bold">Rp ${this.formatNumber(
+                            receipt.change
+                        )}</div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <!-- Grand Total Highlight -->
+                    <div class="center" style="margin: 10px 0;">
+                        <div style="font-size: 12px; margin-bottom: 2px;">GRAND TOTAL</div>
+                        <div class="bold" style="font-size: 20px;">Rp ${this.formatNumber(
+                            receipt.total
+                        )}</div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <!-- Footer -->
+                    <div class="center footer">
+                        <div>Terima kasih atas kunjungan Anda</div>
+                        <div>Barang yang sudah dibeli</div>
+                        <div>tidak dapat dikembalikan</div>
+                        <br>
+                        <div>-- Layanan Pelanggan --</div>
+                        <div>0812-3456-7890</div>
                     </div>
                 </body>
                 </html>`;

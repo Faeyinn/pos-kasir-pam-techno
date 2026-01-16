@@ -34,20 +34,28 @@
             </template>
         </div>
 
-        <p class="text-[10px] sm:text-xs text-gray-400 uppercase font-black tracking-widest mb-3" x-text="product.category"></p>
+
     </div>
     
     <div>
         <div class="flex items-end justify-between">
-            <div class="flex flex-col">
-                <div class="font-black text-blue-600 text-base sm:text-xl" x-text="'Rp ' + formatNumber(paymentType === 'wholesale' ? product.wholesale : product.price)"></div>
-                <div 
-                    x-show="paymentType === 'wholesale'" 
-                    class="text-[10px] sm:text-xs font-bold text-purple-600 mt-1"
-                    x-text="'Per ' + product.wholesaleUnit + ' (' + product.wholesaleQtyPerUnit + ' pcs)'"
-                ></div>
+            <div class="flex flex-col w-full">
+                <!-- Retail Price -->
+                <div class="font-black text-gray-900 text-base sm:text-lg" x-text="'Rp ' + formatNumber(product.price)"></div>
+                
+                <!-- Wholesale Info -->
+                <template x-if="product.wholesale > 0">
+                    <div class="mt-1.5 p-2 bg-blue-50 rounded-lg border border-blue-100">
+                        <div class="text-[10px] sm:text-[11px] leading-tight text-blue-800">
+                            <span class="font-bold">Grosir:</span> 
+                            <span>min. 1 <span x-text="product.wholesaleUnit"></span> (<span x-text="product.wholesaleQtyPerUnit"></span> pcs)</span>
+                            <span class="font-bold text-blue-600 block sm:inline sm:ml-1">@ Rp <span x-text="formatNumber(product.wholesalePricePerPiece)"></span></span>
+                        </div>
+                    </div>
+                </template>
             </div>
-            <div class="bg-blue-600 text-white p-2.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0 shadow-lg shadow-blue-200">
+            
+            <div class="absolute bottom-4 right-4 bg-blue-600 text-white p-2.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0 shadow-lg shadow-blue-200">
                 <i data-lucide="plus" class="w-5 h-5"></i>
             </div>
         </div>

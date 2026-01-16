@@ -2,7 +2,7 @@
     x-show="showScannerModal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm"
     x-transition.opacity
-    style="display: none;"
+    x-cloak
 >
     <!-- Scanner Container -->
     <div 

@@ -1,8 +1,6 @@
 <div class="bg-white border-b border-gray-100 p-6 flex items-center justify-between shrink-0">
     <div class="flex items-center gap-6">
-        <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-blue-600 transition-colors">
-            <i data-lucide="menu" class="w-6 h-6"></i>
-        </button>
+
         <div>
             <h2 class="text-2xl font-black text-gray-900 leading-none">
                 @yield('page_title', 'Sesi Kasir')
@@ -32,13 +30,48 @@
             <span class="text-xs font-bold text-blue-600">Riwayat</span>
         </button>
 
-        <div class="flex items-center gap-4 pl-6 border-l border-gray-100">
-            <div class="text-right hidden sm:block">
-                <div class="font-bold text-sm text-gray-900">{{ Auth::user()->name }}</div>
-                <div class="text-blue-600 text-[10px] font-bold uppercase tracking-widest">{{ Auth::user()->role === 'admin' ? 'Owner / Admin' : 'Petugas Kasir' }}</div>
-            </div>
-            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-200 uppercase">
-                {{ substr(Auth::user()->name, 0, 1) }}
+        <div class="flex items-center gap-4 pl-6 border-l border-gray-100" x-data="{ open: false }">
+            <div class="relative">
+                <button 
+                    @click="open = !open" 
+                    @click.outside="open = false"
+                    class="flex items-center gap-4 hover:bg-gray-50 p-2 -m-2 rounded-xl transition-colors"
+                >
+                    <div class="text-right hidden sm:block">
+                        <div class="font-bold text-sm text-gray-900">{{ Auth::user()->name }}</div>
+                        <div class="text-blue-600 text-[10px] font-bold uppercase tracking-widest">{{ Auth::user()->role === 'admin' ? 'Owner / Admin' : 'Petugas Kasir' }}</div>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-200 uppercase">
+                        {{ substr(Auth::user()->name, 0, 1) }}
+                    </div>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div 
+                    x-show="open" 
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 translate-y-2"
+                    class="absolute right-0 top-full mt-4 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden"
+                    style="display: none;"
+                >
+                    <div class="p-2">
+                        <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            Lihat Profil
+                        </a>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors text-left">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

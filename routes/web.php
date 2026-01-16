@@ -11,6 +11,8 @@ Route::middleware('auth')->group(function () {
         return view('pages.kasir');
     })->name('kasir');
 
+    Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
+
     // API Routes for Kasir
     Route::prefix('api')->group(function () {
         Route::get('/products', [App\Http\Controllers\Api\ProductController::class, 'index'])->name('api.products.index');

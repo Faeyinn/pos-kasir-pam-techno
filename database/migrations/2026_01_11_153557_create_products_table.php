@@ -17,7 +17,7 @@ return new class extends Migration
             
             // Informasi dasar produk
             $table->string('name');
-            $table->string('category');
+            $table->json('tags')->nullable(); // Tag untuk filter produk (Consolidated from later migrations)
             $table->string('image')->nullable(); // Path atau URL gambar produk
             
             // Harga eceran (retail)

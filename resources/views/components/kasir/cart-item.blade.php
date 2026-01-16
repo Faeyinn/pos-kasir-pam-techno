@@ -21,11 +21,13 @@
             <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors text-lg font-bold">+</button>
         </div>
         <div class="text-right">
-            <div class="text-[10px] text-gray-400 mb-0.5">
-                <span x-show="paymentType === 'retail'">@ Rp </span>
-                <span x-show="paymentType === 'wholesale'">@ Rp </span>
-                <span x-text="formatNumber(getItemPrice(item))"></span>
-                <span x-show="paymentType === 'wholesale'" x-text="'/' + item.wholesaleUnit"></span>
+            <div class="text-[10px] text-gray-400 mb-0.5 flex items-center justify-end gap-1.5">
+                <template x-if="isWholesale(item)">
+                    <span class="line-through text-red-300 decoration-red-300/50 decoration-2">Rp <span x-text="formatNumber(item.price)"></span></span>
+                </template>
+                <span class="font-bold" :class="isWholesale(item) ? 'text-blue-600' : ''">
+                    @ Rp <span x-text="formatNumber(getItemPrice(item))"></span>
+                </span>
             </div>
             <div class="text-lg font-black text-gray-900" x-text="'Rp ' + formatNumber(getItemPrice(item) * item.qty)"></div>
         </div>
