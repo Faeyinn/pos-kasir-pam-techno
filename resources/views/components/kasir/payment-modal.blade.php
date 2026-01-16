@@ -42,7 +42,7 @@
         x-transition:enter-end="scale-100 opacity-100"
         @click.stop
     >
-        <!-- Header -->
+
         <div class="bg-gray-50 px-8 py-6 border-b border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <button @click="showPaymentModal = false" class="p-2 hover:bg-gray-200 rounded-xl transition-colors">
@@ -55,7 +55,7 @@
                     <i data-lucide="user" class="w-4 h-4 text-gray-400"></i>
                     <span class="text-sm font-semibold text-gray-600">Kasir</span>
                 </div>
-                <!-- Top Right Close Button -->
+
                 <button 
                     @click="showPaymentModal = false" 
                     class="p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors group"
@@ -66,13 +66,12 @@
             </div>
         </div>
 
-        <!-- Content -->
         <div class="p-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Left: Ringkasan Belanja -->
+
                 <div class="border border-gray-200 rounded-2xl p-6">
                     <h3 class="text-base font-bold text-gray-800 mb-4">Ringkasan Belanja</h3>
-                    
+
                     <div class="space-y-3 mb-4 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                         <template x-for="(item, index) in cart" :key="item.id">
                             <div class="flex justify-between items-start text-sm">
@@ -100,10 +99,9 @@
                     </div>
                 </div>
 
-                <!-- Right: Metode Pembayaran -->
                 <div class="border border-gray-200 rounded-2xl p-6">
                     <h3 class="text-base font-bold text-gray-800 mb-4">Metode Pembayaran</h3>
-                    
+
                     <div class="grid grid-cols-2 gap-3">
                         <button 
                             @click="selectedPaymentMethod = 'tunai'"
@@ -137,7 +135,6 @@
                 </div>
             </div>
 
-            <!-- Bottom: Jumlah yang Diterima -->
             <div class="border border-gray-200 rounded-2xl p-6">
                 <div class="flex items-center gap-4 mb-4">
                     <h3 class="text-base font-bold text-gray-800">Jumlah yang Diterima</h3>
@@ -149,7 +146,7 @@
                         Uang Pas
                     </button>
                 </div>
-                
+
                 <div class="flex items-center gap-6">
                     <div class="flex-1">
                         <div class="relative flex items-center gap-3">
@@ -162,7 +159,7 @@
                                     placeholder="0"
                                     class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-xl text-lg font-bold text-gray-900 focus:outline-none focus:border-blue-500 transition-colors"
                                 >
-                                <!-- Clear Button -->
+
                                 <button 
                                     x-show="amountReceived.length > 0"
                                     @click="amountReceived = ''; $nextTick(() => window.lucide && lucide.createIcons())"

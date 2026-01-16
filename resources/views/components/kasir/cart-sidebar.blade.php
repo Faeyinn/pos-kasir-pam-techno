@@ -16,7 +16,6 @@
             ></div>
         </div>
 
-        <!-- Cart Items -->
         <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
             <template x-if="cart.length === 0">
                 <div class="flex flex-col items-center justify-center h-full text-gray-300 py-10">
@@ -29,14 +28,13 @@
             </template>
         </div>
 
-        <!-- Summary Section -->
         <div class="shrink-0">
             <div class="p-6 bg-white space-y-4">
                 <div class="flex items-center justify-between">
                     <span class="text-xl font-bold text-gray-800">Total</span>
                     <span class="text-xl font-black text-blue-600" x-text="'Rp ' + formatNumber(cartTotal)"></span>
                 </div>
-                
+
                 <div class="space-y-3">
                     <button 
                         @click="showPaymentModal = true"
@@ -45,7 +43,7 @@
                     >
                         Proses Pembayaran (<span x-text="paymentType === 'wholesale' ? 'Grosir' : 'Eceran'"></span>)
                     </button>
-                    
+
                     <button 
                         @click="clearCart()"
                         :disabled="cart.length === 0"

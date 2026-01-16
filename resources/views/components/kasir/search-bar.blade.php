@@ -9,8 +9,7 @@
                 x-model="searchQuery"
             />
         </div>
-        
-        <!-- Scan Button -->
+
         <div class="relative shrink-0">
              <button 
                 @click="openScanner()" 
@@ -21,7 +20,6 @@
             </button>
         </div>
 
-        <!-- View Toggle Buttons -->
         <div class="flex bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl sm:rounded-[2rem] p-1 shadow-sm h-[56px] sm:h-[64px]">
             <button 
                 @click="viewMode = 'grid'; $nextTick(() => window.lucide && lucide.createIcons())" 
@@ -41,7 +39,6 @@
             </button>
         </div>
 
-        <!-- Filter Button & Dropdown -->
         <div x-data="{ open: false }" class="relative shrink-0">
             <button 
                 @click="open = !open; $nextTick(() => window.lucide && lucide.createIcons())" 
@@ -78,7 +75,7 @@
                             Reset Filter
                         </button>
                     </div>
-                    
+
                     <div class="flex flex-wrap gap-3 max-h-[400px] overflow-y-auto custom-scrollbar">
                         <template x-for="tag in uniqueTags" :key="tag">
                             <button 
@@ -92,7 +89,7 @@
                             </button>
                         </template>
                     </div>
-                    
+
                     <div x-show="selectedTags.length === 0" class="mt-4 text-center py-4 border-t border-dashed border-gray-100">
                         <p class="text-xs text-gray-400">Pilih tag untuk menyaring produk</p>
                     </div>
@@ -101,9 +98,8 @@
         </div>
     </div>
 
-    <!-- Tags Display Area -->
     <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2 min-h-[40px]">
-        <!-- Active Tags -->
+
         <template x-if="selectedTags.length > 0">
             <div class="flex gap-2">
                 <template x-for="tag in selectedTags" :key="'active-' + tag">
@@ -124,10 +120,9 @@
             </div>
         </template>
 
-        <!-- Recommended / Popular Tags (Show when no active tags) -->
         <template x-if="selectedTags.length === 0">
             <div class="flex gap-2">
-                <!-- Label removed to look cleaner like categories -->
+
                 <template x-for="tag in popularTags" :key="'popular-' + tag">
                     <button 
                         @click="toggleTag(tag)"

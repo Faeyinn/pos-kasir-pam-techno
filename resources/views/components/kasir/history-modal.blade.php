@@ -17,7 +17,7 @@
         x-transition:enter-start="scale-95 opacity-0"
         x-transition:enter-end="scale-100 opacity-100"
     >
-        <!-- Header -->
+
         <div class="bg-gray-50 px-6 py-5 border-b border-gray-200 flex items-center justify-between shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -33,7 +33,6 @@
             </button>
         </div>
 
-        <!-- Content -->
         <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
             <template x-if="transactionHistory.length === 0">
                 <div class="flex flex-col items-center justify-center py-16 text-gray-400">
@@ -91,7 +90,6 @@
             </div>
         </div>
 
-        <!-- Footer -->
         <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between shrink-0">
             <div class="text-sm text-gray-600">
                 Total: <span class="font-bold" x-text="transactionHistory.length + ' transaksi'"></span>

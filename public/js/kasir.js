@@ -1,15 +1,11 @@
-/**
- * Kasir System Logic
- * Organized into modules for better maintainability.
- */
 
 document.addEventListener("alpine:init", () => {
     Alpine.data("kasirSystem", () => ({
-        // --- State ---
+
         searchQuery: "",
 
         searchQuery: "",
-        viewMode: "grid", // 'grid' | 'list'
+        viewMode: "grid", 
 
         selectedTags: [],
         cart: [],
@@ -23,9 +19,8 @@ document.addEventListener("alpine:init", () => {
         products: [],
         loading: false,
         notifications: [],
-        paymentType: "retail", // Default payment type
+        paymentType: "retail", 
 
-        // --- Initialization ---
         init() {
             this.fetchProducts();
             this.fetchTransactionHistory();
@@ -35,7 +30,6 @@ document.addEventListener("alpine:init", () => {
             );
         },
 
-        // --- Notifications Module ---
         addNotification(message, type = "error") {
             const id = Date.now();
             this.notifications.push({ id, message, type });
@@ -48,7 +42,6 @@ document.addEventListener("alpine:init", () => {
             }, 4000);
         },
 
-        // --- Products Module ---
         async fetchProducts() {
             this.loading = true;
             try {
@@ -66,7 +59,7 @@ document.addEventListener("alpine:init", () => {
 
                         stock: p.stock,
                         tags: p.tags || [],
-                        // Calculated field for price per piece when wholesale condition met
+
                         wholesalePricePerPiece:
                             p.wholesale_qty_per_unit > 0
                                 ? p.wholesale / p.wholesale_qty_per_unit
@@ -86,7 +79,6 @@ document.addEventListener("alpine:init", () => {
             return this.products.filter((p) => {
                 const query = this.searchQuery.toLowerCase();
 
-                // 1. Logic Pencarian Manual (Search Bar) - Expanded
                 const matchName = p.name.toLowerCase().includes(query);
 
                 const matchTagInSearch =
@@ -95,14 +87,12 @@ document.addEventListener("alpine:init", () => {
 
                 const matchSearch = !query || matchName || matchTagInSearch;
 
-                // 3. Logic Filter Dropdown (Multi-Tags AND Logic)
                 const matchTags =
                     this.selectedTags.length === 0 ||
                     this.selectedTags.every(
                         (tag) => p.tags && p.tags.includes(tag)
                     );
 
-                // 4. Syarat Akhir: (Logic Search) DAN (Logic Multi-Tags)
                 return matchSearch && matchTags;
             });
         },
@@ -116,7 +106,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         get popularTags() {
-            // Count tag frequency
+
             const tagCounts = {};
             this.products.forEach((p) => {
                 if (p.tags) {
@@ -126,11 +116,10 @@ document.addEventListener("alpine:init", () => {
                 }
             });
 
-            // Sort by frequency and take top 5
             return Object.entries(tagCounts)
-                .sort((a, b) => b[1] - a[1]) // Sort descending by count
-                .slice(0, 5) // Take top 5
-                .map((entry) => entry[0]); // Return tag names
+                .sort((a, b) => b[1] - a[1]) 
+                .slice(0, 5) 
+                .map((entry) => entry[0]); 
         },
 
         toggleTag(tag) {
@@ -147,10 +136,9 @@ document.addEventListener("alpine:init", () => {
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
-        // --- Scanner Module ---
         handleBarcodeScan(code) {
             console.log("Handling scan:", code);
-            // Search logic: ID or Name (Exact Match)
+
             const product = this.products.find(
                 (p) =>
                     p.id == code || p.name.toLowerCase() === code.toLowerCase()
@@ -163,7 +151,6 @@ document.addEventListener("alpine:init", () => {
                     "success"
                 );
 
-                // Optional: Play beep if not handled in modal
             } else {
                 this.addNotification(
                     `Produk tidak ditemukan: ${code}`,
@@ -172,18 +159,15 @@ document.addEventListener("alpine:init", () => {
             }
         },
 
-        // --- Cart Module ---
         addToCart(product) {
             const existingItem = this.cart.find(
                 (item) => item.id === product.id
             );
 
-            // Logic baru: Selalu tambah 1 unit (retail base)
-            // Jika quantity mencapai grosir, harga otomatis berubah di isWholesale/getItemPrice
             const requestQty = 1;
 
             if (existingItem) {
-                // Check stock for increment
+
                 if (existingItem.qty + requestQty > existingItem.stock) {
                     this.addNotification(
                         `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${existingItem.stock} unit.`
@@ -247,7 +231,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         isWholesale(item) {
-            // Otomatis grosir jika qty >= wholesaleQtyPerUnit dan fitur grosir tersedia
+
             return (
                 item.wholesale > 0 &&
                 item.wholesaleQtyPerUnit > 0 &&
@@ -255,7 +239,6 @@ document.addEventListener("alpine:init", () => {
             );
         },
 
-        // --- Transactions Module ---
         async fetchTransactionHistory() {
             try {
                 const response = await fetch("/api/transactions");
@@ -413,7 +396,6 @@ document.addEventListener("alpine:init", () => {
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
-        // --- Print & Utilities Module ---
         reprintReceipt(transaction) {
             this.receiptData = transaction;
             this.showHistoryModal = false;
@@ -442,7 +424,7 @@ document.addEventListener("alpine:init", () => {
             receipt.items.forEach((item) => {
                 const itemTotal = this.formatNumber(item.qty * item.finalPrice);
                 const itemPrice = this.formatNumber(item.finalPrice);
-                // Grid layout for precise alignment
+
                 itemsHTML += `<div style="margin-bottom: 5px;">
                     <div style="font-weight: bold; margin-bottom: 2px;">${item.name}</div>
                     <div style="display: grid; grid-template-columns: 1fr auto; width: 100%;">
@@ -464,8 +446,6 @@ document.addEventListener("alpine:init", () => {
             const transactionType =
                 receipt.paymentType === "wholesale" ? "GROSIR" : "RETAIL";
 
-            // Ultra-simple HTML for thermal printers
-            // Uses only basic fonts and black colors
             const htmlContent = `<!DOCTYPE html>
                 <html>
                 <head>
@@ -502,9 +482,9 @@ document.addEventListener("alpine:init", () => {
                         <div style="font-size: 11px;">Jalan Raya Gadut, Lubuk Kilangan</div>
                         <div style="font-size: 11px;">Padang, Sumatera Barat</div>
                     </div>
-                    
+
                     <div class="divider"></div>
-                    
+
                     <!-- Meta Info -->
                     <div class="grid-2 mb-1">
                         <div>No Transaksi</div>
@@ -531,14 +511,14 @@ document.addEventListener("alpine:init", () => {
                         <div>Pembayaran</div>
                         <div class="bold">${paymentMethodText}</div>
                     </div>
-                    
+
                     <div class="divider"></div>
-                    
+
                     <!-- Items -->
                     <div style="margin: 8px 0;">${itemsHTML}</div>
-                    
+
                     <div class="divider"></div>
-                    
+
                     <!-- Totals -->
                     <div class="grid-2 mb-1">
                         <div>Total</div>
@@ -558,9 +538,9 @@ document.addEventListener("alpine:init", () => {
                             receipt.change
                         )}</div>
                     </div>
-                    
+
                     <div class="divider"></div>
-                    
+
                     <!-- Grand Total Highlight -->
                     <div class="center" style="margin: 10px 0;">
                         <div style="font-size: 12px; margin-bottom: 2px;">GRAND TOTAL</div>
@@ -568,9 +548,9 @@ document.addEventListener("alpine:init", () => {
                             receipt.total
                         )}</div>
                     </div>
-                    
+
                     <div class="divider"></div>
-                    
+
                     <!-- Footer -->
                     <div class="center footer">
                         <div>Terima kasih atas kunjungan Anda</div>

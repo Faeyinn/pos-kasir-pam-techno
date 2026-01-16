@@ -10,7 +10,7 @@
             </p>
         </div>
     </div>
-    
+
     <div class="flex items-center gap-4">
         <div class="hidden md:flex flex-col items-end">
             <div class="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-100">
@@ -18,8 +18,6 @@
                 <span class="text-[10px] font-black text-green-600 uppercase tracking-widest">Sistem Online</span>
             </div>
         </div>
-
-
 
         <button 
             @click="$dispatch('open-history')"
@@ -46,7 +44,6 @@
                     </div>
                 </button>
 
-                <!-- Dropdown Menu -->
                 <div 
                     x-show="open" 
                     x-transition:enter="transition ease-out duration-200"

@@ -1,7 +1,7 @@
 <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-    <!-- Grid View Container -->
+
     <div x-show="viewMode === 'grid'" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 pb-24 lg:pb-6">
-        <!-- Loading Skeleton (Grid) -->
+
         <template x-for="i in (loading ? 12 : 0)" :key="'skeleton-grid-' + i">
             <div class="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-gray-100 shadow-sm overflow-hidden animate-pulse">
                 <div class="aspect-square bg-gradient-to-br from-slate-200 via-slate-150 to-slate-100 rounded-xl sm:rounded-2xl mb-3 sm:mb-4"></div>
@@ -15,16 +15,14 @@
                 </div>
             </div>
         </template>
-        
-        <!-- Actual Products (Grid) -->
+
         <template x-for="product in (!loading ? filteredProducts : [])" :key="'grid-' + product.id">
             <x-kasir.product-card />
         </template>
     </div>
 
-    <!-- List View Container -->
     <div x-show="viewMode === 'list'" class="flex flex-col gap-3 pb-24 lg:pb-6">
-        <!-- Loading Skeleton (List) -->
+
         <template x-for="i in (loading ? 8 : 0)" :key="'skeleton-list-' + i">
             <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-4 animate-pulse">
                 <div class="w-20 h-20 bg-slate-200 rounded-xl shrink-0"></div>
@@ -36,10 +34,9 @@
             </div>
         </template>
 
-        <!-- Actual Products (List) -->
         <template x-for="product in (!loading ? filteredProducts : [])" :key="'list-' + product.id">
             <div class="group bg-white rounded-2xl p-3 sm:p-4 border border-gray-100 hover:border-blue-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
-                <!-- Image -->
+
                 <div class="relative shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-xl overflow-hidden">
                     <template x-if="product.image">
                         <img :src="'/storage/' + product.image" :alt="product.name" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
@@ -51,7 +48,6 @@
                     </template>
                 </div>
 
-                <!-- Info -->
                 <div class="flex-1 min-w-0">
                     <h3 class="font-bold text-gray-800 text-sm sm:text-base truncate group-hover:text-blue-600 transition-colors" x-text="product.name"></h3>
                     <div class="flex flex-col gap-1 mt-1">
@@ -66,7 +62,6 @@
                     </div>
                 </div>
 
-                <!-- Action -->
                 <button 
                     @click="addToCart(product)"
                     class="shrink-0 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all active:scale-95"
@@ -76,8 +71,7 @@
             </div>
         </template>
     </div>
-        
-    <!-- Empty State (Common) -->
+
     <template x-if="!loading && filteredProducts.length === 0">
         <div class="flex flex-col items-center justify-center py-16 text-center">
             <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">

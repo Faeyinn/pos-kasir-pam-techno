@@ -18,19 +18,17 @@
         x-transition:enter-end="scale-100 translate-y-0 opacity-100"
     >
         <div class="p-8 text-center">
-            <!-- Icon -->
+
             <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
                 <i data-lucide="trash-2" class="w-10 h-10 text-red-500"></i>
             </div>
-            
-            <!-- Text Content -->
+
             <h3 class="text-xl font-bold text-gray-900 mb-2">Kosongkan Keranjang?</h3>
             <p class="text-sm text-gray-500 font-medium leading-relaxed px-4">
                 Semua item yang telah Anda pilih akan dihapus dari daftar belanja.
             </p>
         </div>
 
-        <!-- Actions -->
         <div class="p-6 bg-gray-50/50 flex gap-3">
             <button 
                 @click="showClearCartModal = false"

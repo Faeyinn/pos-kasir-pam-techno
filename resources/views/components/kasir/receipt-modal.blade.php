@@ -17,7 +17,7 @@
         x-transition:enter-start="scale-95 opacity-0"
         x-transition:enter-end="scale-100 opacity-100"
     >
-        <!-- Success Header -->
+
         <div class="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-6 text-center relative overflow-hidden print-hide">
             <div class="relative z-10">
                 <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-3 border-2 border-white/30">
@@ -28,19 +28,17 @@
             </div>
         </div>
 
-        <!-- Receipt Content -->
         <div class="p-4 bg-gray-50 max-h-[60vh] overflow-y-auto custom-scrollbar">
             <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                 <template x-if="receiptData">
                     <div class="space-y-4">
-                        <!-- Store Info -->
+
                         <div class="text-center pb-3 border-b border-gray-100">
                             <h3 class="text-base font-bold text-gray-900">PAM TECHNO</h3>
                             <p class="text-[10px] text-gray-500 mt-0.5">Sistem Kasir Digital</p>
                             <p class="text-[10px] text-gray-500 mt-0.5">================================</p>
                         </div>
 
-                        <!-- Transaction Details -->
                         <div class="space-y-1">
                             <div class="flex justify-between items-center text-xs">
                                 <span class="text-gray-600">No. Transaksi</span>
@@ -68,7 +66,6 @@
                             </div>
                         </div>
 
-                        <!-- Items List -->
                         <div class="border-t border-gray-100 pt-3">
                             <p class="text-[10px] text-gray-500 mb-2">================================</p>
                             <div class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
@@ -87,7 +84,6 @@
                             </div>
                         </div>
 
-                        <!-- Total -->
                         <div class="border-t border-gray-100 pt-3 space-y-1">
                             <p class="text-[10px] text-gray-500 mb-2">================================</p>
                             <div class="flex justify-between items-center text-xs">
@@ -113,7 +109,6 @@
                             </div>
                         </div>
 
-                        <!-- Footer Note -->
                         <div class="text-center pt-3 border-t border-gray-100">
                             <p class="text-[10px] text-gray-500">================================</p>
                             <p class="text-[10px] text-gray-500 font-medium mt-1">Terima kasih atas kunjungan Anda</p>
@@ -125,7 +120,6 @@
             </div>
         </div>
 
-        <!-- Action Buttons -->
         <div class="p-4 bg-white border-t border-gray-100 space-y-2 print-hide">
             <button
                 @click="printReceipt()"

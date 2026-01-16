@@ -3,10 +3,9 @@
     class="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all cursor-pointer group active:scale-95 flex flex-col justify-between h-full relative overflow-hidden"
 >
     <div>
-        <!-- Product Photo Container -->
+
         <div class="aspect-square bg-gray-50 rounded-xl sm:rounded-2xl mb-4 sm:mb-5 overflow-hidden group-hover:bg-blue-50 transition-colors relative flex items-center justify-center">
-            
-            <!-- Icon Dus (Default / Fallback) -->
+
             <div 
                 class="w-full h-full flex items-center justify-center bg-gray-50"
                 x-show="!product.image"
@@ -14,7 +13,6 @@
                 <i data-lucide="package" class="w-10 h-10 sm:w-16 sm:h-16 text-gray-300 group-hover:text-blue-300 transition-colors"></i>
             </div>
 
-            <!-- Real Product Image (Only if exists) -->
             <img 
                 x-show="product.image"
                 x-bind:src="product.image ? (product.image.startsWith('http') ? product.image : '/storage/' + product.image) : ''" 
@@ -26,24 +24,21 @@
         </div>
 
         <h4 class="font-bold text-gray-900 text-sm sm:text-base mb-2 line-clamp-2 leading-tight" x-text="product.name"></h4>
-        
-        <!-- Tags -->
+
         <div class="flex flex-wrap gap-1.5 mb-3" x-show="product.tags && product.tags.length > 0">
             <template x-for="tag in (product.tags || [])">
                  <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-500 uppercase tracking-wide" x-text="tag"></span>
             </template>
         </div>
 
-
     </div>
-    
+
     <div>
         <div class="flex items-end justify-between">
             <div class="flex flex-col w-full">
-                <!-- Retail Price -->
+
                 <div class="font-black text-gray-900 text-base sm:text-lg" x-text="'Rp ' + formatNumber(product.price)"></div>
-                
-                <!-- Wholesale Info -->
+
                 <template x-if="product.wholesale > 0">
                     <div class="mt-1.5 p-2 bg-blue-50 rounded-lg border border-blue-100">
                         <div class="text-[10px] sm:text-[11px] leading-tight text-blue-800">
@@ -54,7 +49,7 @@
                     </div>
                 </template>
             </div>
-            
+
             <div class="absolute bottom-4 right-4 bg-blue-600 text-white p-2.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0 shadow-lg shadow-blue-200">
                 <i data-lucide="plus" class="w-5 h-5"></i>
             </div>

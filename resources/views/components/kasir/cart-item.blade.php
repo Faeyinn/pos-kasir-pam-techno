@@ -1,5 +1,5 @@
 <div class="bg-gray-50/80 rounded-2xl p-5 relative group border border-transparent hover:border-gray-200 transition-all">
-    <!-- Delete Button -->
+
     <button @click="removeFromCart(item.id)" class="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors">
         <i data-lucide="x" class="w-4 h-4"></i>
     </button>

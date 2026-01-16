@@ -4,7 +4,7 @@
     x-transition.opacity
     x-cloak
 >
-    <!-- Scanner Container -->
+
     <div 
         class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden mx-4"
         @click.outside="stopScanner()"
@@ -18,8 +18,7 @@
 
         <div class="relative w-full aspect-square bg-black rounded-xl overflow-hidden">
             <div id="reader" class="w-full h-full"></div>
-            
-            <!-- Overlay Guide -->
+
             <div class="absolute inset-0 border-2 border-white/30 pointer-events-none flex items-center justify-center">
                 <div class="w-48 h-48 border-2 border-blue-500 rounded-lg relative">
                     <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-500 -mt-1 -ml-1"></div>

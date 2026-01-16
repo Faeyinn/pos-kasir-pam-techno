@@ -16,11 +16,11 @@
             -webkit-backdrop-filter: blur(12px);
         }
     </style>
-    <!-- Alpine.js -->
+
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-slate-50 flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
-    <!-- Background Decoration -->
+
     <div class="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
         <div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-200/40 rounded-full blur-[100px] animate-pulse"></div>
         <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-200/40 rounded-full blur-[100px] animate-pulse" style="animation-delay: 1s;"></div>
@@ -28,7 +28,7 @@
 
     <div class="w-full max-w-md mx-auto">
         <div class="glass-effect bg-white/90 border border-white/20 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-8 sm:p-10 transition-all duration-300">
-            <!-- Header Section -->
+
             <div class="flex flex-col items-center mb-8">
                 <div class="mb-6 flex items-center justify-center w-full h-32">
                     <img src="{{ asset('assets/logo.png') }}" alt="Pam Techno Logo" class="h-full object-contain filter drop-shadow-md">
@@ -36,7 +36,7 @@
                 <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Selamat Datang</h2>
                 <p class="text-gray-500 mt-2 text-center text-sm sm:text-base">Masuk ke sistem kasir Pam Techno</p>
             </div>
-            
+
             <form 
                 action="{{ route('login.post') }}" 
                 method="POST" 
@@ -44,7 +44,7 @@
                 x-data="{ showPassword: false }"
             >
                 @csrf
-                <!-- Email Field -->
+
                 <div class="space-y-2">
                     <label class="block text-sm font-semibold text-gray-700 ml-1">Email</label>
                     <div class="relative group">
@@ -59,8 +59,7 @@
                         <p class="text-red-500 text-xs mt-1 ml-1 font-medium">{{ $message }}</p>
                     @enderror
                 </div>
-                
-                <!-- Password Field -->
+
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
                         <label class="block text-sm font-semibold text-gray-700 ml-1">Password</label>
@@ -100,8 +99,7 @@
                 </button>
             </form>
         </div>
-        
-        <!-- Bottom Links/Help -->
+
         <p class="text-center mt-8 text-gray-500 text-sm">
             Butuh bantuan? <a href="#" class="text-blue-600 font-semibold hover:underline">Hubungi Support</a>
         </p>

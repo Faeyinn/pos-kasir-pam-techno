@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Pam Techno POS')</title>
-    <!-- Tailwind CSS -->
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
+
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Html5-QRCode Library -->
+
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
         [x-cloak] { display: none !important; }
-        
+
         /* Print Styles - Professional Thermal Receipt */
         @media print {
             /* ... (keep existing print styles if possible, but for brevity I am just replacing the head part or I should use multi_replace if I want to be precise) ... */
@@ -28,13 +28,13 @@
     @stack('styles')
 </head>
 <body class="font-sans antialiased selection:bg-blue-500 selection:text-white">
-    <!-- Aesthetic Background Container -->
+
     <div class="fixed inset-0 -z-10 overflow-hidden bg-slate-50/50">
-        <!-- Blob 1: Top Left -->
+
         <div class="absolute top-[-10%] left-[-5%] w-96 h-96 bg-blue-400 rounded-full blur-[100px] opacity-20"></div>
-        <!-- Blob 2: Middle Right -->
+
         <div class="absolute top-[20%] right-[-10%] w-96 h-96 bg-purple-300 rounded-full blur-[100px] opacity-30"></div>
-        <!-- Blob 3: Bottom Left -->
+
         <div class="absolute bottom-[-20%] left-[20%] w-[600px] h-[600px] bg-indigo-200 rounded-full blur-[120px] opacity-40"></div>
     </div>
 
@@ -56,10 +56,10 @@
             startScanner() {
                 // Return if scanner already running or html5-qrcode not loaded
                 if (this.scanner || !window.Html5Qrcode) return;
-                
+
                 this.scanner = new Html5Qrcode('reader');
                 const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                
+
                 this.scanner.start(
                     { facingMode: 'environment' },
                     config,
@@ -100,20 +100,17 @@
     >
 
         <div class="flex-1 flex flex-col min-w-0">
-            <!-- Header -->
+
             <x-header />
 
-            <!-- Main Content -->
             <main class="flex-1 overflow-hidden">
                 @yield('content')
             </main>
         </div>
-        
-        <!-- Scanner Modal Component -->
+
         <x-kasir.scanner-modal />
     </div>
 
-    <!-- Alpine.js for interactivity -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
         // Initialize Lucide icons
