@@ -51,7 +51,7 @@
                         <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 group-focus-within:text-blue-500 transition-colors">
                             <i data-lucide="mail" class="w-5 h-5"></i>
                         </span>
-                        <input type="email" name="email" value="{{ old('email') }}" placeholder="admin@pamtechno.com" 
+                        <input type="email" name="email" value="{{ old('email') }}" placeholder="pamtechno@gmail.com" 
                             class="w-full pl-11 pr-4 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium @error('email') border-red-500 @enderror text-sm sm:text-base" 
                             required autofocus>
                     </div>
@@ -101,7 +101,7 @@
         </div>
 
         <p class="text-center mt-8 text-gray-500 text-sm">
-            Butuh bantuan? <a href="#" class="text-blue-600 font-semibold hover:underline">Hubungi Support</a>
+            Belum punya akun? <a href="{{ route('register') }}" class="text-blue-600 font-semibold hover:underline">Daftar sekarang</a>
         </p>
     </div>
 

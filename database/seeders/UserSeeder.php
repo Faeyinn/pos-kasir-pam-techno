@@ -13,10 +13,21 @@ class UserSeeder extends Seeder
     {
 
         User::updateOrCreate(
-            ['email' => 'adminpamtechno@gmail.com'],
+            ['username' => 'master'],
+            [
+                'name' => 'Master Owner',
+                'email' => 'masterpam@gmail.com',
+                'password' => Hash::make('masterspirit45'),
+                'role' => 'master',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['username' => 'admin'],
             [
                 'name' => 'Admin Pam Techno',
-                'username' => 'admin',
+                'email' => 'adminpam@gmail.com',
                 'password' => Hash::make('adminspirit45'),
                 'role' => 'admin',
                 'email_verified_at' => now(),
@@ -24,10 +35,21 @@ class UserSeeder extends Seeder
         );
 
         User::updateOrCreate(
-            ['email' => 'jaeyi@gmail.com'],
+            ['username' => 'kasir'],
             [
-                'name' => 'Kasir Jaeyi',
-                'username' => 'jaeyi',
+                'name' => 'Kasir Staff',
+                'email' => 'kasirpam@gmail.com',
+                'password' => Hash::make('kasirspirit45'),
+                'role' => 'kasir',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['username' => 'jaeyi'],
+            [
+                'name' => 'Jaeyi',
+                'email' => 'jaeyi@gmail.com',
                 'password' => Hash::make('jaeyispirit45'),
                 'role' => 'kasir',
                 'email_verified_at' => now(),

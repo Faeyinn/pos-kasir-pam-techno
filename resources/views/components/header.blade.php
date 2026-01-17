@@ -37,7 +37,7 @@
                 >
                     <div class="text-right hidden sm:block">
                         <div class="font-bold text-sm text-gray-900">{{ Auth::user()->name }}</div>
-                        <div class="text-blue-600 text-[10px] font-bold uppercase tracking-widest">{{ Auth::user()->role === 'admin' ? 'Owner / Admin' : 'Petugas Kasir' }}</div>
+                        <div class="text-blue-600 text-[10px] font-bold uppercase tracking-widest">{{ Auth::user()->role === 'admin' ? 'Owner / Admin' : (Auth::user()->role === 'master' ? 'Master Access' : 'Petugas Kasir') }}</div>
                     </div>
                     <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-200 uppercase">
                         {{ substr(Auth::user()->name, 0, 1) }}
@@ -60,6 +60,21 @@
                             <i data-lucide="user" class="w-4 h-4"></i>
                             Lihat Profil
                         </a>
+                        
+                        @if(Auth::user()->role === 'master')
+                        <div class="h-px bg-gray-100 my-1"></div>
+                        <form action="{{ route('role.set') }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="role" value="admin">
+                             <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-colors text-left">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                                Switch to Admin
+                            </button>
+                        </form>
+                        <div class="h-px bg-gray-100 my-1"></div>
+                        @else
+                        <div class="h-px bg-gray-100 my-1"></div>
+                        @endif
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
                             <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors text-left">

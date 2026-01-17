@@ -10,6 +10,15 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::check()) {
+            $user = Auth::user();
+            if ($user->role === 'master') {
+                 if (session('active_role') === 'admin') return redirect()->route('admin.dashboard');
+                 if (session('active_role') === 'kasir') return redirect()->route('kasir');
+                 return redirect()->route('role.selection');
+            }
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.dashboard');
+            }
             return redirect()->route('kasir');
         }
         return view('pages.login');
@@ -25,7 +34,17 @@ class AuthController extends Controller
         if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->has('remember'))) {
             $request->session()->regenerate();
 
-            return redirect()->intended('kasir');
+            $user = Auth::user();
+
+            if ($user->role === 'master') {
+                return redirect()->route('role.selection');
+            }
+
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.dashboard');
+            }
+
+            return redirect()->route('kasir');
         }
 
         return back()->withErrors([
@@ -41,6 +60,36 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    public function showRegister()
+    {
+        if (Auth::check()) {
+            return redirect()->route('kasir');
+        }
+        return view('pages.register');
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = \App\Models\User::create([
+            'name' => $validated['name'],
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'role' => 'kasir', // Default role
+        ]);
+
+        Auth::login($user);
+
+        return redirect()->route('kasir');
     }
 
     public function profile()
