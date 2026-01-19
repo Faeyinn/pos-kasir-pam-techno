@@ -7,6 +7,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Product;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
@@ -16,12 +17,15 @@ class ProductSeeder extends Seeder
         Product::truncate();
         Schema::enableForeignKeyConstraints();
 
-        // Create tags first
+        // Create tags first with explicit slug
         $tagNames = ['Botol', 'Minuman', 'Instan', 'Mie', 'Susu', 'Kotak', 'Roti', 'Sarapan', 'Kopi', 'Bubuk', 'Pokok', 'Sembako', 'Kebersihan', 'Perawatan'];
         $tags = [];
         
         foreach ($tagNames as $tagName) {
-            $tag = Tag::firstOrCreate(['name' => $tagName]);
+            $tag = Tag::firstOrCreate(
+                ['name' => $tagName],
+                ['slug' => Str::slug($tagName)]
+            );
             $tags[$tagName] = $tag->id;
         }
 
