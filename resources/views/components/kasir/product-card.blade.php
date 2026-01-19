@@ -26,8 +26,12 @@
         <h4 class="font-bold text-gray-900 text-sm sm:text-base mb-2 line-clamp-2 leading-tight" x-text="product.name"></h4>
 
         <div class="flex flex-wrap gap-1.5 mb-3" x-show="product.tags && product.tags.length > 0">
-            <template x-for="tag in (product.tags || [])">
-                 <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-500 uppercase tracking-wide" x-text="tag"></span>
+            <template x-for="tag in (product.tags || [])" :key="tag.id">
+                 <span 
+                    class="px-2.5 py-1 rounded-md text-[10px] font-bold border" 
+                    :style="`background-color: ${tag.color}15; color: ${tag.color}; border-color: ${tag.color}30`"
+                    x-text="tag.name"
+                ></span>
             </template>
         </div>
 

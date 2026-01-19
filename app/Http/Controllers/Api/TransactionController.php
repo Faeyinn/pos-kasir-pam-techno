@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Product;
+use App\Services\DiscountService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -49,13 +50,22 @@ class TransactionController extends Controller
         DB::beginTransaction();
         
         try {
-            // Calculate totals
+            // Calculate subtotal
             $subtotal = 0;
             foreach ($request->items as $item) {
                 $subtotal += $item['qty'] * $item['price'];
             }
 
-            $total = $subtotal;
+            // APPLY DISCOUNT
+            $discountService = app(DiscountService::class);
+            $cartItems = collect($request->items);
+            $discountData = $discountService->findApplicableDiscount($cartItems);
+
+            $discountAmount = $discountData['amount'];
+            $discount = $discountData['discount'];
+
+            // Calculate final total
+            $total = $subtotal - $discountAmount;
             $change = $request->amount_received - $total;
 
             if ($change < 0) {
@@ -66,6 +76,8 @@ class TransactionController extends Controller
             $transaction = Transaction::create([
                 'transaction_number' => Transaction::generateTransactionNumber(),
                 'user_id' => auth()->id() ?? 1, // Default to user ID 1 if not authenticated
+                'discount_id' => $discount?->id ?? null,
+                'discount_amount' => $discountAmount,
                 'payment_type' => $request->payment_type,
                 'payment_method' => $request->payment_method,
                 'subtotal' => $subtotal,
@@ -101,15 +113,27 @@ class TransactionController extends Controller
                 $product->decrement('stock', $qtyToDeduct);
             }
 
+            // Log discount if applied
+            if ($discount) {
+                $discountService->logDiscountApplication(
+                    $discount,
+                    $discountAmount,
+                    $transaction->transaction_number
+                );
+            }
+
             DB::commit();
 
             // Load relationships
-            $transaction->load(['user', 'items.product']);
+            $transaction->load(['user', 'items.product', 'discount']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Transaksi berhasil',
-                'data' => $transaction
+                'data' => $transaction,
+                'discount_applied' => $discount ? true : false,
+                'discount_amount' => $discountAmount,
+                'discount_name' => $discount?->name ?? null
             ], 201);
 
         } catch (\Exception $e) {

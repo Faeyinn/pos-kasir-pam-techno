@@ -77,15 +77,18 @@
                     </div>
 
                     <div class="flex flex-wrap gap-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-                        <template x-for="tag in uniqueTags" :key="tag">
+                        <template x-for="tag in availableTags" :key="tag.id">
                             <button 
-                                @click="toggleTag(tag)"
+                                @click="toggleTag(tag.id)"
                                 class="px-5 py-2.5 rounded-full text-sm font-medium transition-all border select-none active:scale-95 shadow-sm"
-                                :class="selectedTags.includes(tag) 
-                                    ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200 hover:bg-blue-700' 
+                                :class="selectedTags.includes(tag.id) 
+                                    ? 'text-white shadow-md' 
                                     : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'"
-                                x-text="tag"
+                                :style="selectedTags.includes(tag.id) 
+                                    ? `background-color: ${tag.color}; border-color: ${tag.color}; box-shadow: 0 4px 6px -1px ${tag.color}40` 
+                                    : ''"
                             >
+                                <span x-text="tag.name"></span>
                             </button>
                         </template>
                     </div>
@@ -102,12 +105,13 @@
 
         <template x-if="selectedTags.length > 0">
             <div class="flex gap-2">
-                <template x-for="tag in selectedTags" :key="'active-' + tag">
+                <template x-for="tagId in selectedTags" :key="'active-' + tagId">
                     <button 
-                        @click="toggleTag(tag)"
-                        class="flex items-center gap-2 px-5 py-2.5 rounded-xl sm:rounded-full bg-blue-600 border-2 border-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-red-500 hover:border-red-500 hover:shadow-red-200 transition-all font-bold text-xs sm:text-sm group animate-in fade-in zoom-in duration-200 active:scale-95"
+                        @click="toggleTag(tagId)"
+                        class="flex items-center gap-2 px-5 py-2.5 rounded-xl sm:rounded-full text-white shadow-lg transition-all font-bold text-xs sm:text-sm group animate-in fade-in zoom-in duration-200 active:scale-95 border hover:opacity-90"
+                        :style="`background-color: ${availableTags.find(t => t.id === tagId)?.color}; border-color: ${availableTags.find(t => t.id === tagId)?.color}`"
                     >
-                        <span x-text="tag"></span>
+                        <span x-text="availableTags.find(t => t.id === tagId)?.name"></span>
                         <i data-lucide="x" class="w-4 h-4 group-hover:rotate-90 transition-transform"></i>
                     </button>
                 </template>
@@ -123,11 +127,11 @@
         <template x-if="selectedTags.length === 0">
             <div class="flex gap-2">
 
-                <template x-for="tag in popularTags" :key="'popular-' + tag">
+                <template x-for="tag in popularTags" :key="'popular-' + tag.id">
                     <button 
-                        @click="toggleTag(tag)"
+                        @click="toggleTag(tag.id)"
                         class="px-5 py-2.5 rounded-xl sm:rounded-full font-bold text-xs sm:text-sm bg-white/50 backdrop-blur-sm border-2 border-gray-200/50 text-gray-400 hover:border-gray-200 hover:text-gray-600 transition-all active:scale-95 whitespace-nowrap"
-                        x-text="tag"
+                        x-text="tag.name"
                     ></button>
                 </template>
             </div>

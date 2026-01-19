@@ -8,25 +8,32 @@ class Product extends Model
 {
     protected $fillable = [
         'name',
-
         'image',
         'price',
+        'cost_price',
         'wholesale',
         'wholesale_unit',
         'wholesale_qty_per_unit',
         'stock',
-        'is_active',
-        'tags'
+        'is_active'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'price' => 'integer',
+        'cost_price' => 'integer',
         'wholesale' => 'integer',
         'stock' => 'integer',
-        'wholesale_qty_per_unit' => 'integer',
-        'tags' => 'array'
+        'wholesale_qty_per_unit' => 'integer'
     ];
+
+    /**
+     * Get tags associated with this product
+     */
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class);
+    }
 
     public function transactionItems()
     {

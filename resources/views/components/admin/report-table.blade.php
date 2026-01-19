@@ -1,0 +1,90 @@
+<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <h4 class="text-lg font-bold text-slate-900">Detail Penjualan</h4>
+        <div class="relative w-full sm:w-64">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+            <input 
+                type="text" 
+                x-model.debounce.500ms="filters.search"
+                class="w-full pl-9 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 placeholder:text-slate-400"
+                placeholder="Cari produk atau no trx..."
+            >
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50 border-b border-slate-100">
+                <tr>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Tanggal</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">No Transaksi</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Produk</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Qty</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Harga Jual</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Modal</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Laba</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-center">Tipe</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                <template x-if="detailLoading">
+                    <tr>
+                        <td colspan="8" class="px-6 py-8 text-center text-slate-500">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
+                        </td>
+                    </tr>
+                </template>
+                
+                <template x-for="row in detailData" :key="row.transaction_number + row.product_name">
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 text-sm text-slate-600" x-text="formatDate(row.created_at)"></td>
+                        <td class="px-6 py-4 text-sm font-medium text-slate-900" x-text="row.transaction_number"></td>
+                        <td class="px-6 py-4 text-sm text-slate-900" x-text="row.product_name"></td>
+                        <td class="px-6 py-4 text-sm text-slate-900 text-right" x-text="row.qty"></td>
+                        <td class="px-6 py-4 text-sm text-slate-600 text-right" x-text="formatCurrency(row.selling_price)"></td>
+                        <td class="px-6 py-4 text-sm text-slate-400 text-right" x-text="formatCurrency(row.cost_price)"></td>
+                        <td class="px-6 py-4 text-sm font-semibold text-emerald-600 text-right" x-text="formatCurrency(row.profit)"></td>
+                        <td class="px-6 py-4 text-center">
+                            <span 
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
+                                :class="row.payment_type === 'wholesale' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"
+                                x-text="row.payment_type === 'wholesale' ? 'Grosir' : 'Eceran'"
+                            ></span>
+                        </td>
+                    </tr>
+                </template>
+
+                <template x-if="!detailLoading && detailData.length === 0">
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-slate-400">
+                            Tidak ada data ditemukan
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    {{-- Pagination --}}
+    <div class="p-4 border-t border-slate-100 flex items-center justify-between" x-show="pagination.total > 0">
+        <span class="text-sm text-slate-500">
+            Show <span x-text="pagination.from"></span> to <span x-text="pagination.to"></span> of <span x-text="pagination.total"></span> entries
+        </span>
+        <div class="flex gap-2">
+            <button 
+                @click="changePage(pagination.current_page - 1)" 
+                :disabled="pagination.current_page === 1"
+                class="px-3 py-1 border border-slate-200 rounded text-sm disabled:opacity-50 hover:bg-slate-50"
+            >
+                Prev
+            </button>
+            <button 
+                @click="changePage(pagination.current_page + 1)" 
+                :disabled="pagination.current_page === pagination.last_page"
+                class="px-3 py-1 border border-slate-200 rounded text-sm disabled:opacity-50 hover:bg-slate-50"
+            >
+                Next
+            </button>
+        </div>
+    </div>
+</div>

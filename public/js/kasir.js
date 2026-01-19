@@ -21,7 +21,10 @@ document.addEventListener("alpine:init", () => {
         notifications: [],
         paymentType: "retail", 
 
+        availableTags: [], // Holds all available tags from API
+        
         init() {
+            this.fetchTags(); // Fetch tags first
             this.fetchProducts();
             this.fetchTransactionHistory();
 
@@ -30,16 +33,16 @@ document.addEventListener("alpine:init", () => {
             );
         },
 
-        addNotification(message, type = "error") {
-            const id = Date.now();
-            this.notifications.push({ id, message, type });
-            this.$nextTick(() => window.lucide && lucide.createIcons());
-
-            setTimeout(() => {
-                this.notifications = this.notifications.filter(
-                    (n) => n.id !== id
-                );
-            }, 4000);
+        async fetchTags() {
+            try {
+                const response = await fetch("/api/tags");
+                const data = await response.json();
+                if (data.success) {
+                    this.availableTags = data.data;
+                }
+            } catch (error) {
+                console.error("Error fetching tags:", error);
+            }
         },
 
         async fetchProducts() {
@@ -58,7 +61,7 @@ document.addEventListener("alpine:init", () => {
                         wholesaleQtyPerUnit: p.wholesale_qty_per_unit,
 
                         stock: p.stock,
-                        tags: p.tags || [],
+                        tags: p.tags || [], // Now array of objects {id, name, color, slug}
 
                         wholesalePricePerPiece:
                             p.wholesale_qty_per_unit > 0
@@ -81,52 +84,49 @@ document.addEventListener("alpine:init", () => {
 
                 const matchName = p.name.toLowerCase().includes(query);
 
+                // Check tags names
                 const matchTagInSearch =
                     p.tags &&
-                    p.tags.some((t) => t.toLowerCase().includes(query));
+                    p.tags.some((t) => t.name.toLowerCase().includes(query));
 
                 const matchSearch = !query || matchName || matchTagInSearch;
 
+                // Filter by selected Tags (selectedTags contains tag IDs)
                 const matchTags =
                     this.selectedTags.length === 0 ||
                     this.selectedTags.every(
-                        (tag) => p.tags && p.tags.includes(tag)
+                        (selectedTagId) => p.tags && p.tags.some(t => t.id === selectedTagId)
                     );
 
                 return matchSearch && matchTags;
             });
         },
 
-        get uniqueTags() {
-            const tags = new Set();
-            this.products.forEach((p) => {
-                if (p.tags) p.tags.forEach((t) => tags.add(t));
-            });
-            return Array.from(tags).sort();
-        },
-
+        // Replace uniqueTags with availableTags from API
         get popularTags() {
-
+            // Calculate popular tags based on product count
             const tagCounts = {};
             this.products.forEach((p) => {
                 if (p.tags) {
                     p.tags.forEach((t) => {
-                        tagCounts[t] = (tagCounts[t] || 0) + 1;
+                        tagCounts[t.id] = (tagCounts[t.id] || 0) + 1;
                     });
                 }
             });
 
+            // Return tag objects, sorted by count
             return Object.entries(tagCounts)
                 .sort((a, b) => b[1] - a[1]) 
-                .slice(0, 5) 
-                .map((entry) => entry[0]); 
+                .slice(0, 10) // Limit to top 10
+                .map(([id]) => this.availableTags.find(t => t.id == id))
+                .filter(t => t); // Filter out undefined
         },
 
-        toggleTag(tag) {
-            if (this.selectedTags.includes(tag)) {
-                this.selectedTags = this.selectedTags.filter((t) => t !== tag);
+        toggleTag(tagId) {
+            if (this.selectedTags.includes(tagId)) {
+                this.selectedTags = this.selectedTags.filter((t) => t !== tagId);
             } else {
-                this.selectedTags.push(tag);
+                this.selectedTags.push(tagId);
             }
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },

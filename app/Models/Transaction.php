@@ -9,6 +9,8 @@ class Transaction extends Model
     protected $fillable = [
         'transaction_number',
         'user_id',
+        'discount_id',
+        'discount_amount',
         'payment_type',
         'payment_method',
         'subtotal',
@@ -21,12 +23,18 @@ class Transaction extends Model
         'subtotal' => 'integer',
         'total' => 'integer',
         'amount_received' => 'integer',
-        'change' => 'integer'
+        'change' => 'integer',
+        'discount_amount' => 'integer'
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class);
     }
 
     public function items()

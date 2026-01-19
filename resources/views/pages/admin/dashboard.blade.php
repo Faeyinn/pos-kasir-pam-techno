@@ -1,8 +1,62 @@
 @extends('layouts.admin')
 @section('header', 'Dashboard')
 @section('content')
-    <div class="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">
-        <h3 class="text-2xl font-bold text-slate-800">Welcome to Dashboard</h3>
-        <p class="text-slate-500 mt-2">Ini merupakan halaman Dashboard Admin.</p>
+<div x-data="adminDashboard()" x-init="init()" class="space-y-6">
+    
+    {{-- KPI Summary Cards --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <x-admin.dashboard.kpi-card 
+            title="Penjualan Bulan Ini"
+            icon="trending-up"
+            color="blue"
+            :loading="false"
+            x-text="formatRupiah(stats.sales_today)"
+        />
+        
+        <x-admin.dashboard.kpi-card 
+            title="Laba Bulan Ini"
+            icon="dollar-sign"
+            color="green"
+            :loading="false"
+            x-text="formatRupiah(stats.profit_today)"
+        />
+        
+        <x-admin.dashboard.kpi-card 
+            title="Transaksi Bulan Ini"
+            icon="shopping-cart"
+            color="purple"
+            :loading="false"
+            x-text="stats.transactions_today"
+        />
+        
+        <x-admin.dashboard.kpi-card 
+            title="Produk Stok Menipis"
+            icon="alert-triangle"
+            color="red"
+            :loading="false"
+            x-text="stats.low_stock_count"
+        />
     </div>
+
+    {{-- Charts Row --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <x-admin.dashboard.sales-profit-chart 
+            class="lg:col-span-2" 
+            :loading="false" 
+        />
+        
+        <x-admin.dashboard.category-chart 
+            :loading="false" 
+        />
+    </div>
+
+    {{-- Top Products Table --}}
+    <x-admin.dashboard.top-products-table 
+        :loading="false" 
+    />
+</div>
+
+@push('scripts')
+    <x-admin.scripts.dashboard />
+@endpush
 @endsection

@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Panel - Pam Techno</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <style>body { font-family: 'Inter', sans-serif; } [x-cloak] { display: none !important; }</style>
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div class="flex h-screen">
@@ -27,6 +28,16 @@
                     <i data-lucide="package" class="w-5 h-5"></i>
                     <span class="font-medium">Products</span>
                 </a>
+                <a href="{{ route('admin.discounts') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('admin.discounts') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }} transition-colors">
+                    <i data-lucide="percent" class="w-5 h-5"></i>
+                    <span class="font-medium">Diskon</span>
+                </a>
+                <a href="{{ route('admin.reports') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('admin.reports') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }} transition-colors">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span class="font-medium">Laporan</span>
+                </a>
+
+
                 <a href="{{ route('admin.users') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('admin.users') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }} transition-colors">
                     <i data-lucide="users" class="w-5 h-5"></i>
                     <span class="font-medium">Users</span>
@@ -77,6 +88,21 @@
            </main>
         </div>
     </div>
-    <script>lucide.createIcons();</script>
+    
+    <script>
+        // Ensure Lucide icons are created after DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+        
+        // Re-create icons after Alpine updates
+        document.addEventListener('alpine:initialized', function() {
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+        });
+    </script>
+    
+    @stack('scripts')
 </body>
 </html>

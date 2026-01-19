@@ -4,17 +4,31 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    /**
+     * Get all tags for filtering
+     */
+    public function getTags()
+    {
+        $tags = Tag::orderBy('name')->get();
+        return response()->json([
+            'success' => true,
+            'data' => $tags
+        ]);
+    }
     public function index(Request $request)
     {
-        $query = Product::active();
+        $query = Product::active()->with('tags');
 
-        // Filter by category
+        // Filter by Tag (formerly Category)
         if ($request->has('category') && $request->category !== 'all') {
-            $query->where('category', $request->category);
+            $query->whereHas('tags', function($q) use ($request) {
+                $q->where('name', $request->category);
+            });
         }
 
         // Search by name
@@ -23,6 +37,9 @@ class ProductController extends Controller
         }
 
         $products = $query->orderBy('name')->get();
+        
+        // Hide cost_price from kasir
+        $products->makeHidden(['cost_price']);
 
         return response()->json([
             'success' => true,
@@ -32,7 +49,10 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::with('tags')->findOrFail($id);
+        
+        // Hide cost_price from kasir
+        $product->makeHidden(['cost_price']);
 
         return response()->json([
             'success' => true,
