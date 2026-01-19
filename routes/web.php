@@ -52,6 +52,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/discounts/{id}/toggle', [App\Http\Controllers\DiscountController::class, 'toggleStatus'])->name('api.admin.discounts.toggle');
         Route::delete('/discounts/{id}', [App\Http\Controllers\DiscountController::class, 'destroy'])->name('api.admin.discounts.destroy');
         
+        // Discount Analytics
+        Route::get('/discounts/analytics', [App\Http\Controllers\Api\DiscountAnalyticsController::class, 'index'])->name('api.admin.discounts.analytics');
+        
         // Heatmap Analytics
         Route::get('/heatmap/frequency', [App\Http\Controllers\Api\HeatmapController::class, 'getPurchaseFrequency'])->name('api.admin.heatmap.frequency');
         
@@ -79,4 +82,5 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
 });
+
 

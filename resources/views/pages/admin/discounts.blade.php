@@ -3,7 +3,7 @@
 @section('header', 'Manajemen Diskon')
 
 @section('content')
-<div x-data="discountManager" x-init="init" class="min-h-screen">
+<div x-data="discountManager" x-init="init" class="min-h-screen space-y-6">
     {{-- Header with Add Button --}}
     <div class="mb-6 flex items-center justify-between">
         <div>
@@ -22,6 +22,21 @@
 
     {{-- Discount Table --}}
     <x-admin.discount-table />
+
+    {{-- Analytics Section --}}
+    <div class="space-y-6">
+        <div class="border-t pt-6">
+            <h2 class="text-xl font-bold text-slate-900">
+                📊 Analisis Efektivitas Diskon
+            </h2>
+            <p class="text-sm text-slate-600 mt-1">
+                Data 30 hari terakhir • Update real-time
+            </p>
+        </div>
+
+        <x-admin.discount-analytics-comparison />
+        <x-admin.discount-analytics-table />
+    </div>
 
     {{-- Discount Modal --}}
     <x-admin.discount-modal :products="$products" :tags="$tags" />
@@ -51,11 +66,33 @@ document.addEventListener('alpine:init', () => {
             is_active: true
         },
 
+        // Analytics data
+        comparison: {
+            without_discount: {},
+            with_discount: {},
+            diff: {}
+        },
+        performance: [],
+
         init() {
-            // Initial icon creation after Alpine renders
             this.$nextTick(() => {
                 lucide.createIcons();
             });
+            this.loadAnalytics();
+        },
+
+        async loadAnalytics() {
+            try {
+                const res = await fetch('/api/admin/discounts/analytics');
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.comparison = data.data.comparison;
+                    this.performance = data.data.performance;
+                }
+            } catch (e) {
+                console.error('Failed to load analytics:', e);
+            }
         },
 
         openModal(mode, discount = null) {
@@ -188,10 +225,6 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        /**
-         * Format MySQL datetime to datetime-local input format
-         * Converts: "2026-01-18 14:30:00" -> "2026-01-18T14:30"
-         */
         formatForInput(dateTimeString) {
             if (!dateTimeString) return '';
             
@@ -206,10 +239,6 @@ document.addEventListener('alpine:init', () => {
             return `${year}-${month}-${day}T${hours}:${minutes}`;
         },
 
-        /**
-         * Format datetime for display in table
-         * Converts to: "DD/MM/YYYY HH:MM"
-         */
         formatDateTime(dateTimeString) {
             if (!dateTimeString) return '-';
             
@@ -222,6 +251,41 @@ document.addEventListener('alpine:init', () => {
             const minutes = date.getMinutes().toString().padStart(2, '0');
             
             return `${day}/${month}/${year} ${hours}:${minutes}`;
+        },
+
+        formatNumber(num) {
+            return new Intl.NumberFormat('id-ID').format(num);
+        },
+
+        getConclusion() {
+            const profitDiff = this.comparison.diff?.total_profit || 0;
+            const marginDiff = 
+                (this.comparison.with_discount?.profit_margin || 0) - 
+                (this.comparison.without_discount?.profit_margin || 0);
+            
+            if (profitDiff > 50) {
+                return `Meskipun margin turun ${Math.abs(marginDiff).toFixed(1)}%, 
+                        profit meningkat ${profitDiff}% karena volume transaksi meningkat signifikan. 
+                        <strong class="text-green-700">✅ Diskon EFEKTIF meningkatkan laba</strong>`;
+            } else if (profitDiff > 0) {
+                return `Profit meningkat ${profitDiff}% dengan diskon. 
+                        <strong class="text-green-700">✅ Diskon menguntungkan</strong>`;
+            } else {
+                return `⚠️ Profit turun ${Math.abs(profitDiff)}% dengan diskon. 
+                        Pertimbangkan untuk mengurangi nilai diskon atau meningkatkan minimum purchase.`;
+            }
+        },
+
+        getROIIcon(roi) {
+            if (roi > 500) return '🟢';
+            if (roi > 200) return '🟡';
+            return '🔴';
+        },
+
+        getROIColorClass(roi) {
+            if (roi > 500) return 'text-green-600';
+            if (roi > 200) return 'text-yellow-600';
+            return 'text-red-600';
         }
     }));
 });
