@@ -5,16 +5,25 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Product;
+use App\Models\Tag;
 use Illuminate\Support\Facades\Schema;
 
 class ProductSeeder extends Seeder
 {
-
     public function run(): void
     {
         Schema::disableForeignKeyConstraints();
         Product::truncate();
         Schema::enableForeignKeyConstraints();
+
+        // Create tags first
+        $tagNames = ['Botol', 'Minuman', 'Instan', 'Mie', 'Susu', 'Kotak', 'Roti', 'Sarapan', 'Kopi', 'Bubuk', 'Pokok', 'Sembako', 'Kebersihan', 'Perawatan'];
+        $tags = [];
+        
+        foreach ($tagNames as $tagName) {
+            $tag = Tag::firstOrCreate(['name' => $tagName]);
+            $tags[$tagName] = $tag->id;
+        }
 
         $products = [
             ['name' => 'Aqua 600ml', 'price' => 3500, 'cost_price' => 2800, 'wholesale' => 36000, 'wholesale_unit' => 'Dus', 'wholesale_qty_per_unit' => 12, 'stock' => 120, 'tags' => ['Botol', 'Minuman']],
@@ -31,8 +40,25 @@ class ProductSeeder extends Seeder
             ['name' => 'Shampoo Pantene 170ml', 'price' => 22000, 'cost_price' => 17000, 'wholesale' => 240000, 'wholesale_unit' => 'Dus', 'wholesale_qty_per_unit' => 12, 'stock' => 50, 'tags' => ['Kebersihan', 'Perawatan']],
         ];
 
-        foreach ($products as $product) {
-            Product::create($product);
+        foreach ($products as $productData) {
+            // Extract tags from product data
+            $productTags = $productData['tags'];
+            unset($productData['tags']);
+
+            // Create product without tags column
+            $product = Product::create($productData);
+
+            // Attach tags via relationship
+            $tagIds = [];
+            foreach ($productTags as $tagName) {
+                if (isset($tags[$tagName])) {
+                    $tagIds[] = $tags[$tagName];
+                }
+            }
+            
+            if (!empty($tagIds)) {
+                $product->tags()->attach($tagIds);
+            }
         }
     }
 }
