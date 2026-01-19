@@ -1,12 +1,8 @@
-
 document.addEventListener("alpine:init", () => {
     Alpine.data("kasirSystem", () => ({
-
+        // State
         searchQuery: "",
-
-        searchQuery: "",
-        viewMode: "grid", 
-
+        viewMode: "grid",
         selectedTags: [],
         cart: [],
         showPaymentModal: false,
@@ -19,20 +15,34 @@ document.addEventListener("alpine:init", () => {
         products: [],
         loading: false,
         notifications: [],
-        paymentType: "retail", 
+        paymentType: "retail",
+        availableTags: [],
 
-        availableTags: [], // Holds all available tags from API
-        
+        // Initialize
         init() {
-            this.fetchTags(); // Fetch tags first
+            this.fetchTags();
             this.fetchProducts();
             this.fetchTransactionHistory();
 
             this.$watch("searchQuery", () =>
-                this.$nextTick(() => window.lucide && lucide.createIcons())
+                this.$nextTick(() => window.lucide && lucide.createIcons()),
             );
         },
 
+        // ==================== NOTIFICATIONS ====================
+        addNotification(message, type = "error") {
+            const id = Date.now();
+            this.notifications.push({ id, message, type });
+            this.$nextTick(() => window.lucide && lucide.createIcons());
+
+            setTimeout(() => {
+                this.notifications = this.notifications.filter(
+                    (n) => n.id !== id,
+                );
+            }, 4000);
+        },
+
+        // ==================== PRODUCTS ====================
         async fetchTags() {
             try {
                 const response = await fetch("/api/tags");
@@ -59,10 +69,8 @@ document.addEventListener("alpine:init", () => {
                         wholesale: p.wholesale,
                         wholesaleUnit: p.wholesale_unit,
                         wholesaleQtyPerUnit: p.wholesale_qty_per_unit,
-
                         stock: p.stock,
-                        tags: p.tags || [], // Now array of objects {id, name, color, slug}
-
+                        tags: p.tags || [],
                         wholesalePricePerPiece:
                             p.wholesale_qty_per_unit > 0
                                 ? p.wholesale / p.wholesale_qty_per_unit
@@ -81,30 +89,23 @@ document.addEventListener("alpine:init", () => {
         get filteredProducts() {
             return this.products.filter((p) => {
                 const query = this.searchQuery.toLowerCase();
-
                 const matchName = p.name.toLowerCase().includes(query);
-
-                // Check tags names
                 const matchTagInSearch =
                     p.tags &&
                     p.tags.some((t) => t.name.toLowerCase().includes(query));
-
                 const matchSearch = !query || matchName || matchTagInSearch;
-
-                // Filter by selected Tags (selectedTags contains tag IDs)
                 const matchTags =
                     this.selectedTags.length === 0 ||
                     this.selectedTags.every(
-                        (selectedTagId) => p.tags && p.tags.some(t => t.id === selectedTagId)
+                        (selectedTagId) =>
+                            p.tags &&
+                            p.tags.some((t) => t.id === selectedTagId),
                     );
-
                 return matchSearch && matchTags;
             });
         },
 
-        // Replace uniqueTags with availableTags from API
         get popularTags() {
-            // Calculate popular tags based on product count
             const tagCounts = {};
             this.products.forEach((p) => {
                 if (p.tags) {
@@ -113,18 +114,18 @@ document.addEventListener("alpine:init", () => {
                     });
                 }
             });
-
-            // Return tag objects, sorted by count
             return Object.entries(tagCounts)
-                .sort((a, b) => b[1] - a[1]) 
-                .slice(0, 10) // Limit to top 10
-                .map(([id]) => this.availableTags.find(t => t.id == id))
-                .filter(t => t); // Filter out undefined
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([id]) => this.availableTags.find((t) => t.id == id))
+                .filter((t) => t);
         },
 
         toggleTag(tagId) {
             if (this.selectedTags.includes(tagId)) {
-                this.selectedTags = this.selectedTags.filter((t) => t !== tagId);
+                this.selectedTags = this.selectedTags.filter(
+                    (t) => t !== tagId,
+                );
             } else {
                 this.selectedTags.push(tagId);
             }
@@ -138,39 +139,35 @@ document.addEventListener("alpine:init", () => {
 
         handleBarcodeScan(code) {
             console.log("Handling scan:", code);
-
             const product = this.products.find(
                 (p) =>
-                    p.id == code || p.name.toLowerCase() === code.toLowerCase()
+                    p.id == code || p.name.toLowerCase() === code.toLowerCase(),
             );
-
             if (product) {
                 this.addToCart(product);
                 this.addNotification(
                     `Produk ditambahkan: ${product.name}`,
-                    "success"
+                    "success",
                 );
-
             } else {
                 this.addNotification(
                     `Produk tidak ditemukan: ${code}`,
-                    "error"
+                    "error",
                 );
             }
         },
 
+        // ==================== CART ====================
         addToCart(product) {
             const existingItem = this.cart.find(
-                (item) => item.id === product.id
+                (item) => item.id === product.id,
             );
-
             const requestQty = 1;
 
             if (existingItem) {
-
                 if (existingItem.qty + requestQty > existingItem.stock) {
                     this.addNotification(
-                        `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${existingItem.stock} unit.`
+                        `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${existingItem.stock} unit.`,
                     );
                     return;
                 }
@@ -178,7 +175,7 @@ document.addEventListener("alpine:init", () => {
             } else {
                 if (requestQty > product.stock) {
                     this.addNotification(
-                        `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${product.stock} unit.`
+                        `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${product.stock} unit.`,
                     );
                     return;
                 }
@@ -192,7 +189,7 @@ document.addEventListener("alpine:init", () => {
             if (item) {
                 if (delta > 0 && item.qty + delta > item.stock) {
                     this.addNotification(
-                        `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${item.stock} unit.`
+                        `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${item.stock} unit.`,
                     );
                     return;
                 }
@@ -222,7 +219,7 @@ document.addEventListener("alpine:init", () => {
         get cartTotal() {
             return this.cart.reduce(
                 (total, item) => total + this.getItemPrice(item) * item.qty,
-                0
+                0,
             );
         },
 
@@ -231,7 +228,6 @@ document.addEventListener("alpine:init", () => {
         },
 
         isWholesale(item) {
-
             return (
                 item.wholesale > 0 &&
                 item.wholesaleQtyPerUnit > 0 &&
@@ -239,6 +235,7 @@ document.addEventListener("alpine:init", () => {
             );
         },
 
+        // ==================== TRANSACTIONS ====================
         async fetchTransactionHistory() {
             try {
                 const response = await fetch("/api/transactions");
@@ -248,11 +245,18 @@ document.addEventListener("alpine:init", () => {
                         transactionNumber: t.transaction_number,
                         date: new Date(t.created_at).toLocaleDateString(
                             "id-ID",
-                            { day: "2-digit", month: "long", year: "numeric" }
+                            {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                            },
                         ),
                         time: new Date(t.created_at).toLocaleTimeString(
                             "id-ID",
-                            { hour: "2-digit", minute: "2-digit" }
+                            {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            },
                         ),
                         cashier: t.user.name,
                         paymentMethod: t.payment_method,
@@ -275,20 +279,20 @@ document.addEventListener("alpine:init", () => {
 
         async confirmPayment() {
             const paymentModalEl = document.querySelector(
-                '[x-data*="selectedPaymentMethod"]'
+                '[x-data*="selectedPaymentMethod"]',
             );
             const paymentModalData = paymentModalEl
                 ? Alpine.$data(paymentModalEl)
                 : {};
 
             const amountReceived = parseFloat(
-                paymentModalData.amountReceived || 0
+                paymentModalData.amountReceived || 0,
             );
             const change = amountReceived - this.cartTotal;
 
             if (change < 0) {
                 this.addNotification(
-                    "Jumlah uang yang diterima kurang dari total"
+                    "Jumlah uang yang diterima kurang dari total",
                 );
                 return;
             }
@@ -299,7 +303,7 @@ document.addEventListener("alpine:init", () => {
             }
 
             const effectivePaymentType = this.cart.some((item) =>
-                this.isWholesale(item)
+                this.isWholesale(item),
             )
                 ? "wholesale"
                 : "retail";
@@ -322,7 +326,7 @@ document.addEventListener("alpine:init", () => {
                     headers: {
                         "Content-Type": "application/json",
                         "X-CSRF-TOKEN": document.querySelector(
-                            'meta[name="csrf-token"]'
+                            'meta[name="csrf-token"]',
                         ).content,
                     },
                     body: JSON.stringify(transactionData),
@@ -332,7 +336,7 @@ document.addEventListener("alpine:init", () => {
 
                 if (!response.ok || !data.success) {
                     throw new Error(
-                        data.message || "Gagal menyimpan transaksi"
+                        data.message || "Gagal menyimpan transaksi",
                     );
                 }
 
@@ -378,7 +382,7 @@ document.addEventListener("alpine:init", () => {
             } catch (error) {
                 console.error("Error saving transaction:", error);
                 this.addNotification(
-                    error.message || "Gagal menyimpan transaksi"
+                    error.message || "Gagal menyimpan transaksi",
                 );
             }
         },
@@ -396,13 +400,14 @@ document.addEventListener("alpine:init", () => {
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
+        // ==================== PRINT ====================
         reprintReceipt(transaction) {
             this.receiptData = transaction;
             this.showHistoryModal = false;
             this.showReceiptModal = true;
             this.$nextTick(() => {
                 window.lucide && lucide.createIcons();
-                setTimeout(() => window.print(), 500);
+                setTimeout(() => this.printReceipt(), 500);
             });
         },
 
@@ -410,158 +415,211 @@ document.addEventListener("alpine:init", () => {
             return new Intl.NumberFormat("id-ID").format(number);
         },
 
+        padRight(str, length) {
+            str = String(str);
+            if (str.length >= length) return str.substring(0, length);
+            return str + " ".repeat(length - str.length);
+        },
+
+        padLeft(str, length) {
+            str = String(str);
+            if (str.length >= length) return str.substring(str.length - length);
+            return " ".repeat(length - str.length) + str;
+        },
+
+        centerText(str, width) {
+            str = String(str);
+            if (str.length >= width) return str.substring(0, width);
+            const padding = Math.floor((width - str.length) / 2);
+            return (
+                " ".repeat(padding) +
+                str +
+                " ".repeat(width - str.length - padding)
+            );
+        },
+
+        formatRow(left, right, width = 32) {
+            const rightStr = String(right);
+            const maxLeftWidth = width - rightStr.length - 1;
+            const leftStr = this.padRight(left, maxLeftWidth);
+            return leftStr + " " + rightStr;
+        },
+
+        wrapText(text, maxWidth) {
+            const words = text.split(" ");
+            const lines = [];
+            let currentLine = "";
+
+            words.forEach((word) => {
+                if (currentLine.length + word.length + 1 <= maxWidth) {
+                    currentLine += (currentLine ? " " : "") + word;
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine =
+                        word.length > maxWidth
+                            ? word.substring(0, maxWidth)
+                            : word;
+                }
+            });
+            if (currentLine) lines.push(currentLine);
+            return lines;
+        },
+
         printReceipt() {
             if (!this.receiptData) return;
 
-            const printWindow = window.open(
-                "",
-                "_blank",
-                "width=300,height=600"
-            );
+            const WIDTH = 32;
+            const SEPARATOR = "=".repeat(WIDTH);
+            const DASH_LINE = "-".repeat(WIDTH);
             const receipt = this.receiptData;
-
-            let itemsHTML = "";
-            receipt.items.forEach((item) => {
-                const itemTotal = this.formatNumber(item.qty * item.finalPrice);
-                const itemPrice = this.formatNumber(item.finalPrice);
-
-                itemsHTML += `<div style="margin-bottom: 5px;">
-                    <div style="font-weight: bold; margin-bottom: 2px;">${item.name}</div>
-                    <div style="display: grid; grid-template-columns: 1fr auto; width: 100%;">
-                        <div>${item.qty} x ${itemPrice}</div>
-                        <div style="text-align: right; font-weight: bold;">${itemTotal}</div>
-                    </div>
-                </div>`;
-            });
 
             const paymentMethodText =
                 receipt.paymentMethod === "tunai"
                     ? "Tunai"
                     : receipt.paymentMethod === "kartu"
-                    ? "Kartu"
-                    : receipt.paymentMethod === "qris"
-                    ? "QRIS"
-                    : "E-Wallet";
+                      ? "Kartu"
+                      : receipt.paymentMethod === "qris"
+                        ? "QRIS"
+                        : "E-Wallet";
 
             const transactionType =
                 receipt.paymentType === "wholesale" ? "GROSIR" : "RETAIL";
 
+            let lines = [];
+
+            lines.push("");
+            lines.push(this.centerText("PAM TECHNO", WIDTH));
+            lines.push(this.centerText("Sistem Kasir Digital", WIDTH));
+            lines.push(SEPARATOR);
+            lines.push("");
+
+            lines.push(
+                this.formatRow(
+                    "No. Transaksi",
+                    receipt.transactionNumber,
+                    WIDTH,
+                ),
+            );
+            lines.push(this.formatRow("Tanggal", receipt.date, WIDTH));
+            lines.push(this.formatRow("Waktu", receipt.time, WIDTH));
+            lines.push(this.formatRow("Kasir", receipt.cashier, WIDTH));
+            lines.push(this.formatRow("Jenis", transactionType, WIDTH));
+            lines.push("");
+            lines.push(SEPARATOR);
+            lines.push(this.centerText("DAFTAR BELANJA", WIDTH));
+            lines.push(DASH_LINE);
+
+            receipt.items.forEach((item) => {
+                const itemTotal = item.qty * item.finalPrice;
+                const itemTotalFormatted = "Rp " + this.formatNumber(itemTotal);
+                const itemPriceFormatted =
+                    "Rp " + this.formatNumber(item.finalPrice);
+
+                const nameLines = this.wrapText(item.name, WIDTH - 2);
+                nameLines.forEach((line) => {
+                    lines.push(line);
+                });
+
+                const qtyPriceStr = `  ${item.qty} x ${itemPriceFormatted}`;
+                lines.push(
+                    this.formatRow(qtyPriceStr, itemTotalFormatted, WIDTH),
+                );
+                lines.push("");
+            });
+
+            lines.push(DASH_LINE);
+            lines.push(
+                this.formatRow(
+                    "Subtotal",
+                    "Rp " + this.formatNumber(receipt.total),
+                    WIDTH,
+                ),
+            );
+            lines.push(SEPARATOR);
+            lines.push("");
+
+            lines.push(
+                this.formatRow("Metode Bayar", paymentMethodText, WIDTH),
+            );
+            lines.push(
+                this.formatRow(
+                    "Uang Diterima",
+                    "Rp " + this.formatNumber(receipt.amountReceived),
+                    WIDTH,
+                ),
+            );
+            lines.push(
+                this.formatRow(
+                    "Kembalian",
+                    "Rp " + this.formatNumber(receipt.change),
+                    WIDTH,
+                ),
+            );
+            lines.push("");
+            lines.push(SEPARATOR);
+
+            const grandTotalLabel = "GRAND TOTAL";
+            const grandTotalValue = "Rp " + this.formatNumber(receipt.total);
+            lines.push(this.formatRow(grandTotalLabel, grandTotalValue, WIDTH));
+            lines.push(SEPARATOR);
+            lines.push("");
+
+            lines.push(this.centerText("Terima kasih atas", WIDTH));
+            lines.push(this.centerText("kunjungan Anda!", WIDTH));
+            lines.push("");
+            lines.push(this.centerText("Barang yang sudah dibeli", WIDTH));
+            lines.push(this.centerText("tidak dapat dikembalikan", WIDTH));
+            lines.push("");
+            lines.push("");
+
+            const receiptText = lines.join("\n");
+
+            const printWindow = window.open(
+                "",
+                "_blank",
+                "width=400,height=600",
+            );
+
             const htmlContent = `<!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Struk - ${receipt.transactionNumber}</title>
-                    <style>
-                        @page { margin: 0; size: 80mm auto; }
-                        body { 
-                            font-family: 'Courier New', Courier, monospace; 
-                            font-size: 11px; 
-                            line-height: 1.3; 
-                            margin: 0; 
-                            padding: 15px 10px; 
-                            width: 100%;
-                            background: #fff;
-                            color: #000;
-                            box-sizing: border-box;
-                        }
-                        .center { text-align: center; }
-                        .right { text-align: right; }
-                        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-                        .grid-2 { display: grid; grid-template-columns: 1fr auto; width: 100%; }
-                        .bold { font-weight: bold; }
-                        .divider { border-top: 1px dashed #333; margin: 8px 0; }
-                        .header { margin-bottom: 12px; }
-                        .footer { margin-top: 12px; font-size: 10px; color: #333; }
-                        .mb-1 { margin-bottom: 4px; }
-                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
-                    </style>
-                </head>
-                <body>
-                    <!-- Header -->
-                    <div class="center header">
-                        <div class="bold" style="font-size: 18px; margin-bottom: 4px;">PAM TECHNO</div>
-                        <div style="font-size: 11px;">Jalan Raya Gadut, Lubuk Kilangan</div>
-                        <div style="font-size: 11px;">Padang, Sumatera Barat</div>
-                    </div>
-
-                    <div class="divider"></div>
-
-                    <!-- Meta Info -->
-                    <div class="grid-2 mb-1">
-                        <div>No Transaksi</div>
-                        <div class="bold">${receipt.transactionNumber}</div>
-                    </div>
-                    <div class="grid-2 mb-1">
-                        <div>Tanggal</div>
-                        <div>${receipt.date}</div>
-                    </div>
-                    <div class="grid-2 mb-1">
-                        <div>Waktu</div>
-                        <div>${receipt.time}</div>
-                    </div>
-                    <div class="grid-2 mb-1">
-                        <div>Kasir</div>
-                        <div>${receipt.cashier}</div>
-                    </div>
-                    </div>
-                     <div class="grid-2 mb-1">
-                        <div>Tipe</div>
-                        <div class="bold">${transactionType}</div>
-                    </div>
-                     <div class="grid-2 mb-1">
-                        <div>Pembayaran</div>
-                        <div class="bold">${paymentMethodText}</div>
-                    </div>
-
-                    <div class="divider"></div>
-
-                    <!-- Items -->
-                    <div style="margin: 8px 0;">${itemsHTML}</div>
-
-                    <div class="divider"></div>
-
-                    <!-- Totals -->
-                    <div class="grid-2 mb-1">
-                        <div>Total</div>
-                        <div class="bold">Rp ${this.formatNumber(
-                            receipt.total
-                        )}</div>
-                    </div>
-                    <div class="grid-2 mb-1">
-                        <div>Bayar (${paymentMethodText})</div>
-                        <div>Rp ${this.formatNumber(
-                            receipt.amountReceived
-                        )}</div>
-                    </div>
-                    <div class="grid-2 mb-1">
-                        <div>Kembali</div>
-                        <div class="bold">Rp ${this.formatNumber(
-                            receipt.change
-                        )}</div>
-                    </div>
-
-                    <div class="divider"></div>
-
-                    <!-- Grand Total Highlight -->
-                    <div class="center" style="margin: 10px 0;">
-                        <div style="font-size: 12px; margin-bottom: 2px;">GRAND TOTAL</div>
-                        <div class="bold" style="font-size: 20px;">Rp ${this.formatNumber(
-                            receipt.total
-                        )}</div>
-                    </div>
-
-                    <div class="divider"></div>
-
-                    <!-- Footer -->
-                    <div class="center footer">
-                        <div>Terima kasih atas kunjungan Anda</div>
-                        <div>Barang yang sudah dibeli</div>
-                        <div>tidak dapat dikembalikan</div>
-                        <br>
-                        <div>-- Layanan Pelanggan --</div>
-                        <div>0812-3456-7890</div>
-                    </div>
-                </body>
-                </html>`;
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Struk - ${receipt.transactionNumber}</title>
+    <style>
+        @page {
+            margin: 2mm;
+            size: 58mm auto;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+        body {
+            font-family: 'Courier New', 'Lucida Console', Monaco, monospace;
+            font-size: 11px;
+            line-height: 1.3;
+            margin: 0;
+            padding: 5mm;
+            background: #fff;
+            color: #000;
+        }
+        pre {
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+            margin: 0;
+            padding: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+<pre>${receiptText}</pre>
+</body>
+</html>`;
 
             printWindow.document.write(htmlContent);
             printWindow.document.close();
@@ -570,7 +628,7 @@ document.addEventListener("alpine:init", () => {
             setTimeout(() => {
                 printWindow.print();
                 printWindow.close();
-            }, 250);
+            }, 300);
         },
     }));
 });
