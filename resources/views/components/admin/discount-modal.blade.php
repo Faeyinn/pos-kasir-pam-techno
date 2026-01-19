@@ -110,9 +110,40 @@
                     <label class="block text-sm font-medium text-slate-700 mb-2">
                         Pilih Produk <span class="text-red-500">*</span>
                     </label>
+                    
+                    {{-- Search Box + Pilih Semua + Reset --}}
+                    <div class="mb-3 flex gap-2">
+                        <div class="relative w-[62%]">
+                            <input 
+                                type="text" 
+                                x-model="productSearch"
+                                placeholder="Cari produk..."
+                                class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        </div>
+                        <button
+                            type="button"
+                            @click="selectAllProducts()"
+                            class="flex-1 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
+                        >
+                            Pilih Semua
+                        </button>
+                        <button
+                            type="button"
+                            @click="formData.target_ids = []"
+                            class="flex-1 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                    
                     <div class="border border-slate-300 rounded-lg p-3 max-h-48 overflow-y-auto">
                         @foreach($products as $product)
-                        <label class="flex items-center space-x-2 py-2 hover:bg-slate-50 px-2 rounded cursor-pointer">
+                        <label 
+                            class="flex items-center space-x-2 py-2 hover:bg-slate-50 px-2 rounded cursor-pointer"
+                            x-show="'{{ strtolower($product->name) }}'.includes(productSearch.toLowerCase())"
+                        >
                             <input 
                                 type="checkbox" 
                                 :value="{{ $product->id }}" 
@@ -131,9 +162,40 @@
                     <label class="block text-sm font-medium text-slate-700 mb-2">
                         Pilih Tag <span class="text-red-500">*</span>
                     </label>
+                    
+                    {{-- Search Box + Pilih Semua + Reset --}}
+                    <div class="mb-3 grid grid-cols-5 gap-2">
+                        <div class="relative col-span-3">
+                            <input 
+                                type="text" 
+                                x-model="tagSearch"
+                                placeholder="Cari tag..."
+                                class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        </div>
+                        <button
+                            type="button"
+                            @click="selectAllTags()"
+                            class="flex-1 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
+                        >
+                            Pilih Semua
+                        </button>
+                        <button
+                            type="button"
+                            @click="formData.target_ids = []"
+                            class="flex-1 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                    
                     <div class="border border-slate-300 rounded-lg p-3 max-h-48 overflow-y-auto">
                         @foreach($tags as $tag)
-                        <label class="flex items-center space-x-2 py-2 hover:bg-slate-50 px-2 rounded cursor-pointer">
+                        <label 
+                            class="flex items-center space-x-2 py-2 hover:bg-slate-50 px-2 rounded cursor-pointer"
+                            x-show="'{{ strtolower($tag->name) }}'.includes(tagSearch.toLowerCase())"
+                        >
                             <input 
                                 type="checkbox" 
                                 :value="{{ $tag->id }}" 
@@ -171,19 +233,20 @@
                     </div>
                 </div>
 
-                {{-- Active Status --}}
-                <div class="flex items-center space-x-3">
+                {{-- Auto-Activation Toggle --}}
+                <div class="flex items-center justify-between">
+                    <label class="text-sm font-medium text-slate-700">
+                        Aktif/Nonaktif Otomatis
+                    </label>
+                    
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input 
                             type="checkbox" 
-                            x-model="formData.is_active" 
+                            x-model="formData.auto_activate" 
                             class="sr-only peer"
                         >
                         <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
-                    <span class="text-sm font-medium text-slate-700">
-                        Aktifkan diskon segera
-                    </span>
                 </div>
             </div>
 

@@ -15,14 +15,16 @@ class Discount extends Model
         'target_type',
         'start_date',
         'end_date',
-        'is_active'
+        'is_active',
+        'auto_activate'
     ];
 
     protected $casts = [
         'value' => 'integer',
         'start_date' => 'datetime',  // Changed from 'date' to 'datetime'
         'end_date' => 'datetime',    // Changed from 'date' to 'datetime'
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'auto_activate' => 'boolean'
     ];
 
     /**

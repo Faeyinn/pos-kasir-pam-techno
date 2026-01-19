@@ -35,6 +35,14 @@ class Product extends Model
         return $this->belongsToMany(Tag::class);
     }
 
+    /**
+     * Get discounts associated with this product
+     */
+    public function discounts()
+    {
+        return $this->belongsToMany(Discount::class, 'discount_product');
+    }
+
     public function transactionItems()
     {
         return $this->hasMany(TransactionItem::class);

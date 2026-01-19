@@ -17,6 +17,7 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->boolean('is_active')->default(true);
+            $table->boolean('auto_activate')->default(true); // true = auto-activate based on schedule, false = manual
             $table->timestamps();
 
             // Indexes untuk query performance

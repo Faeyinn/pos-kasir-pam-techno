@@ -64,7 +64,7 @@
                     </td>
                     <td class="px-6 py-4">
                         <button 
-                            @click="toggleStatus(discount.id)"
+                            @click="toggleStatus(discount.id, discount.is_active)"
                             :class="discount.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
                             class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
                             x-text="discount.is_active ? 'Aktif' : 'Nonaktif'"

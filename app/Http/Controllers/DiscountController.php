@@ -59,7 +59,8 @@ class DiscountController extends Controller
             'target_ids.*' => 'required|integer',
             'start_date' => 'required',  // Accept any datetime format
             'end_date' => 'required',     // Accept any datetime format  
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'auto_activate' => 'boolean'
         ]);
 
         DB::beginTransaction();
@@ -81,7 +82,8 @@ class DiscountController extends Controller
                 'target_type' => $validated['target_type'],
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'is_active' => $validated['is_active'] ?? true
+                'is_active' => $validated['is_active'] ?? false,
+                'auto_activate' => $validated['auto_activate'] ?? true
             ]);
 
             // Attach products or tags
@@ -146,7 +148,8 @@ class DiscountController extends Controller
             'target_ids.*' => 'required|integer',
             'start_date' => 'required',  // Accept any datetime format
             'end_date' => 'required',     // Accept any datetime format
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'auto_activate' => 'boolean'
         ]);
 
         DB::beginTransaction();
@@ -168,7 +171,8 @@ class DiscountController extends Controller
                 'target_type' => $validated['target_type'],
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'is_active' => $validated['is_active'] ?? $discount->is_active
+                'is_active' => $validated['is_active'] ?? $discount->is_active,
+                'auto_activate' => $validated['auto_activate'] ?? $discount->auto_activate
             ]);
 
             // Sync products or tags

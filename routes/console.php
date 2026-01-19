@@ -8,5 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule: Auto-disable expired discounts every minute
-Schedule::command('discounts:disable-expired')->everyMinute();
+// Schedule: Auto-activate/deactivate discounts based on schedule every minute
+Schedule::command('discounts:sync-status')->everyMinute();

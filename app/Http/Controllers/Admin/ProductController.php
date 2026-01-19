@@ -15,7 +15,11 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::with('tags')->orderBy('name')->get();
+        $products = Product::with(['tags', 'discounts' => function($query) {
+            $query->where('is_active', true)
+                  ->where('start_date', '<=', now())
+                  ->where('end_date', '>=', now());
+        }])->orderBy('name')->get();
         $tags = Tag::orderBy('name')->get();
         
         return view('pages.admin.products', compact('products', 'tags'));

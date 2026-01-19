@@ -31,7 +31,7 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-200">
-                <template x-for="product in filteredProducts" :key="product.id">
+                <template x-for="product in paginatedProducts" :key="product.id">
                     <tr class="hover:bg-slate-50 transition-colors">
                         {{-- Nama Produk --}}
                         <td class="px-6 py-4">
@@ -54,8 +54,28 @@
 
                         {{-- Harga Eceran --}}
                         <td class="px-6 py-4">
-                            <div class="text-sm font-semibold text-slate-900" x-text="'Rp ' + product.price.toLocaleString('id-ID')"></div>
-                            <div class="text-xs text-slate-500">per pcs</div>
+                            <template x-if="getActiveDiscount(product)">
+                                <div>
+                                    {{-- Discount Badge --}}
+                                    <div class="flex items-center gap-1.5 mb-1">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                                            <i data-lucide="percent" class="w-3 h-3"></i>
+                                            <span x-text="getDiscountPercentage(product) + '%'"></span>
+                                        </span>
+                                    </div>
+                                    {{-- Original Price (Strikethrough) --}}
+                                    <div class="text-xs text-slate-400 line-through" x-text="'Rp ' + product.price.toLocaleString('id-ID')"></div>
+                                    {{-- Discounted Price --}}
+                                    <div class="text-sm font-bold text-green-600" x-text="'Rp ' + Math.round(getDiscountedPrice(product)).toLocaleString('id-ID')"></div>
+                                    <div class="text-xs text-slate-500">per pcs</div>
+                                </div>
+                            </template>
+                            <template x-if="!getActiveDiscount(product)">
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-900" x-text="'Rp ' + product.price.toLocaleString('id-ID')"></div>
+                                    <div class="text-xs text-slate-500">per pcs</div>
+                                </div>
+                            </template>
                         </td>
 
                         {{-- Harga Grosir --}}
@@ -169,5 +189,53 @@
                 </template>
             </tbody>
         </table>
+    </div>
+
+    {{-- Pagination --}}
+    <div 
+        x-show="totalPages > 1" 
+        class="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50"
+    >
+        <div class="text-sm text-slate-600">
+            Menampilkan 
+            <span class="font-medium" x-text="((currentPage - 1) * perPage) + 1"></span>
+            - 
+            <span class="font-medium" x-text="Math.min(currentPage * perPage, filteredProducts.length)"></span>
+            dari 
+            <span class="font-medium" x-text="filteredProducts.length"></span>
+            produk
+        </div>
+
+        <div class="flex items-center gap-2">
+            {{-- Previous Button --}}
+            <button
+                @click="prevPage()"
+                :disabled="currentPage === 1"
+                :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'"
+                class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 transition-colors"
+            >
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+
+            {{-- Page Numbers --}}
+            <template x-for="page in totalPages" :key="page">
+                <button
+                    @click="goToPage(page)"
+                    :class="currentPage === page ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'"
+                    class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium transition-colors"
+                    x-text="page"
+                ></button>
+            </template>
+
+            {{-- Next Button --}}
+            <button
+                @click="nextPage()"
+                :disabled="currentPage === totalPages"
+                :class="currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'"
+                class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 transition-colors"
+            >
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+        </div>
     </div>
 </div>

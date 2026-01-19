@@ -1,4 +1,4 @@
-2<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
     {{-- Filter Row --}}
     <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-end justify-between">
         <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto flex-wrap">

@@ -112,6 +112,10 @@ document.addEventListener('alpine:init', () => {
         availableTags: @json($tags),
         search: '',
         
+        // Pagination
+        currentPage: 1,
+        perPage: 10,
+        
         get filteredProducts() {
             if (!this.search) return this.products;
             const q = this.search.toLowerCase();
@@ -119,6 +123,65 @@ document.addEventListener('alpine:init', () => {
                 p.name.toLowerCase().includes(q) ||
                 (p.tags && p.tags.some(t => t.name.toLowerCase().includes(q)))
             );
+        },
+
+        get paginatedProducts() {
+            const filtered = this.filteredProducts;
+            const start = (this.currentPage - 1) * this.perPage;
+            const end = start + this.perPage;
+            return filtered.slice(start, end);
+        },
+
+        get totalPages() {
+            return Math.ceil(this.filteredProducts.length / this.perPage);
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
+        },
+
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+
+        // Discount helper functions
+        getActiveDiscount(product) {
+            if (!product.discounts || product.discounts.length === 0) return null;
+            // Return first active discount (could be extended to handle multiple)
+            return product.discounts[0];
+        },
+
+        getDiscountedPrice(product) {
+            const discount = this.getActiveDiscount(product);
+            if (!discount) return product.price;
+
+            if (discount.type === 'percentage') {
+                return product.price - (product.price * discount.value / 100);
+            } else {
+                return Math.max(0, product.price - discount.value);
+            }
+        },
+
+        getDiscountPercentage(product) {
+            const discount = this.getActiveDiscount(product);
+            if (!discount) return 0;
+
+            if (discount.type === 'percentage') {
+                return discount.value;
+            } else {
+                // Calculate percentage for fixed discount
+                return Math.round((discount.value / product.price) * 100);
+            }
         },
 
         // Edit Product State

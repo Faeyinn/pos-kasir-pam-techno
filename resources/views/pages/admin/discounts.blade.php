@@ -63,8 +63,13 @@ document.addEventListener('alpine:init', () => {
             target_ids: [],
             start_date: '',
             end_date: '',
-            is_active: true
+            is_active: false,  // Will be auto-activated based on schedule if auto_activate=true
+            auto_activate: true  // Default to auto-activation
         },
+
+        // Search states for modal
+        productSearch: '',
+        tagSearch: '',
 
         // Analytics data
         comparison: {
@@ -98,6 +103,10 @@ document.addEventListener('alpine:init', () => {
         openModal(mode, discount = null) {
             this.modalMode = mode;
             
+            // Reset search fields
+            this.productSearch = '';
+            this.tagSearch = '';
+            
             if (mode === 'edit' && discount) {
                 this.formData = {
                     id: discount.id,
@@ -110,7 +119,8 @@ document.addEventListener('alpine:init', () => {
                         : discount.tags.map(t => t.id),
                     start_date: this.formatForInput(discount.start_date),
                     end_date: this.formatForInput(discount.end_date),
-                    is_active: discount.is_active
+                    is_active: discount.is_active,
+                    auto_activate: discount.auto_activate ?? true  // Default to true if not set
                 };
             } else {
                 this.resetForm();
@@ -135,7 +145,8 @@ document.addEventListener('alpine:init', () => {
                 target_ids: [],
                 start_date: '',
                 end_date: '',
-                is_active: true
+                is_active: false,
+                auto_activate: true  // Default to auto-activation
             };
         },
 
@@ -169,11 +180,20 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async toggleStatus(id) {
+        async toggleStatus(discountId, currentStatus) {
+            // Confirmation dialog
+            const statusText = currentStatus ? 'menonaktifkan' : 'mengaktifkan';
+            const confirmed = confirm(`Apakah Anda yakin ingin ${statusText} diskon ini?`);
+            
+            if (!confirmed) {
+                return; // Cancel if user clicks "Cancel"
+            }
+
             try {
-                const res = await fetch(`/api/admin/discounts/${id}/toggle`, {
+                const res = await fetch(`/api/admin/discounts/${discountId}/toggle`, {
                     method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     }
                 });
@@ -286,6 +306,16 @@ document.addEventListener('alpine:init', () => {
             if (roi > 500) return 'text-green-600';
             if (roi > 200) return 'text-yellow-600';
             return 'text-red-600';
+        },
+
+        selectAllProducts() {
+            // Get all product IDs from the products array
+            this.formData.target_ids = this.products.map(p => p.id);
+        },
+
+        selectAllTags() {
+            // Get all tag IDs from the tags array
+            this.formData.target_ids = this.tags.map(t => t.id);
         }
     }));
 });
