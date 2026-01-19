@@ -228,7 +228,7 @@ document.addEventListener('alpine:init', () => {
             this.addErrors = {};
 
             try {
-                const response = await fetch('/admin/api/products', {
+                const response = await fetch('/api/admin/products', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -263,7 +263,7 @@ document.addEventListener('alpine:init', () => {
 
         async editProduct(id) {
             try {
-                const response = await fetch(`/admin/api/products/${id}`);
+                const response = await fetch(`/api/admin/products/${id}`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -295,7 +295,7 @@ document.addEventListener('alpine:init', () => {
             this.errors = {};
 
             try {
-                const response = await fetch(`/admin/api/products/${this.form.id}`, {
+                const response = await fetch(`/api/admin/products/${this.form.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -337,7 +337,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             try {
-                const response = await fetch(`/admin/api/products/${id}`, {
+                const response = await fetch(`/api/admin/products/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
