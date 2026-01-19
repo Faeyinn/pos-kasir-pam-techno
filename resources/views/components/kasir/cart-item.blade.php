@@ -7,6 +7,14 @@
     <h5 class="font-bold text-gray-800 text-base mb-1 pr-6" x-text="item.name"></h5>
     <div class="flex items-center gap-2 mb-4">
         <div class="text-[10px] font-black text-blue-600 uppercase tracking-wider" x-text="isWholesale(item) ? 'GROSIR' : 'ECERAN'"></div>
+        
+        <!-- Discount Indicator (only show if has discount and not wholesale) -->
+        <template x-if="item.hasDiscount && !isWholesale(item)">
+            <div class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-black uppercase">
+                DISKON
+            </div>
+        </template>
+        
         <div 
             x-show="paymentType === 'wholesale'" 
             class="text-[10px] font-semibold text-purple-600"

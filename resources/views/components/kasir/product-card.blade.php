@@ -2,6 +2,19 @@
     x-on:click="addToCart(product)"
     class="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all cursor-pointer group active:scale-95 flex flex-col justify-between h-full relative overflow-hidden"
 >
+    <!-- Discount Badge -->
+    <template x-if="product.hasDiscount">
+        <div class="absolute top-0 right-0 m-3 sm:m-4 z-10">
+            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg shadow-lg font-black text-[10px] sm:text-xs flex items-center gap-1">
+                <i data-lucide="tag" class="w-3 h-3"></i>
+                <span x-text="product.discount.type === 'percentage' 
+                    ? `-${product.discount.value}%` 
+                    : `-Rp ${formatNumber(product.discount.value)}`">
+                </span>
+            </div>
+        </div>
+    </template>
+
     <div>
 
         <div class="aspect-square bg-gray-50 rounded-xl sm:rounded-2xl mb-4 sm:mb-5 overflow-hidden group-hover:bg-blue-50 transition-colors relative flex items-center justify-center">
@@ -41,7 +54,21 @@
         <div class="flex items-end justify-between">
             <div class="flex flex-col w-full">
 
-                <div class="font-black text-gray-900 text-base sm:text-lg" x-text="'Rp ' + formatNumber(product.price)"></div>
+                <!-- Price Section with Discount Support -->
+                <div class="flex flex-col gap-0.5">
+                    <!-- Original Price (struck through if has discount) -->
+                    <template x-if="product.hasDiscount">
+                        <div class="text-xs sm:text-sm text-gray-400 line-through font-medium decoration-2" 
+                             x-text="'Rp ' + formatNumber(product.originalPrice)">
+                        </div>
+                    </template>
+                    
+                    <!-- Current Price (discounted or regular) -->
+                    <div class="font-black text-base sm:text-lg" 
+                         :class="product.hasDiscount ? 'text-red-600' : 'text-gray-900'"
+                         x-text="'Rp ' + formatNumber(product.hasDiscount ? product.discountedPrice : product.price)">
+                    </div>
+                </div>
 
                 <template x-if="product.wholesale > 0">
                     <div class="mt-1.5 p-2 bg-blue-50 rounded-lg border border-blue-100">

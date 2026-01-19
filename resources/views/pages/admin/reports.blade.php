@@ -429,16 +429,101 @@
 
 <style>
     @media print {
-        header, .sidebar, button, input, select {
+        /* Hide non-printable elements */
+        header, .sidebar, button, input, select, nav, .no-print {
             display: none !important;
         }
+        
+        /* Reset main container */
         main {
             padding: 0 !important;
             margin: 0 !important;
             width: 100% !important;
         }
+        
         .w-64 { width: 0 !important; }
         .flex-1 { margin-left: 0 !important; }
+        
+        /* Ensure body uses full page */
+        body {
+            margin: 0;
+            padding: 15mm;
+            background: white;
+        }
+        
+        /* Page break controls */
+        .page-break-before {
+            page-break-before: always;
+        }
+        
+        .page-break-after {
+            page-break-after: always;
+        }
+        
+        .avoid-page-break {
+            page-break-inside: avoid;
+        }
+        
+        /* Optimize tables for printing */
+        table {
+            page-break-inside: auto;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        
+        thead {
+            display: table-header-group; /* Repeat header on each page */
+        }
+        
+        tfoot {
+            display: table-footer-group;
+        }
+        
+        /* Ensure charts and cards print well */
+        canvas {
+            max-width: 100% !important;
+            height: auto !important;
+        }
+        
+        /* Optimize card grids for print */
+        .grid {
+            display: grid !important;
+        }
+        
+        /* Make sure all content is visible */
+        * {
+            overflow: visible !important;
+        }
+        
+        /* Remove box shadows and transitions for cleaner print */
+        * {
+            box-shadow: none !important;
+            transition: none !important;
+            animation: none !important;
+        }
+        
+        /* Ensure proper text rendering */
+        body {
+            color: #000 !important;
+            font-family: Arial, sans-serif;
+        }
+        
+        /* Print-friendly link styles */
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+    }
+    
+    /* Print page size - Portrait A4 */
+    @page {
+        size: A4 portrait;
+        margin: 15mm;
     }
 </style>
 @endpush

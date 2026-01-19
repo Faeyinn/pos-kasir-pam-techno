@@ -75,6 +75,11 @@ document.addEventListener("alpine:init", () => {
                             p.wholesale_qty_per_unit > 0
                                 ? p.wholesale / p.wholesale_qty_per_unit
                                 : p.price,
+                        // Discount properties
+                        discount: p.discount || null,
+                        hasDiscount: p.discount ? true : false,
+                        discountedPrice: p.discount ? p.discount.discounted_price : p.price,
+                        originalPrice: p.price,
                     }));
                 }
             } catch (error) {
@@ -211,9 +216,17 @@ document.addEventListener("alpine:init", () => {
         },
 
         getItemPrice(item) {
-            return this.isWholesale(item)
-                ? item.wholesalePricePerPiece
-                : item.price;
+            // Priority: wholesale > discount > regular price
+            if (this.isWholesale(item)) {
+                return item.wholesalePricePerPiece;
+            }
+            
+            // Use discounted price if available
+            if (item.hasDiscount) {
+                return item.discountedPrice;
+            }
+            
+            return item.price;
         },
 
         get cartTotal() {

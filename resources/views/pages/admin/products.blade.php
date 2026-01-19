@@ -115,6 +115,17 @@ document.addEventListener('alpine:init', () => {
         // Pagination
         currentPage: 1,
         perPage: 10,
+
+        init() {
+            // Debug: Log first product to check discount data
+            if (this.products.length > 0) {
+                console.log('First product:', this.products[0]);
+                console.log('Has discounts?', this.products[0].discounts);
+            }
+            this.$nextTick(() => {
+                lucide.createIcons();
+            });
+        },
         
         get filteredProducts() {
             if (!this.search) return this.products;
