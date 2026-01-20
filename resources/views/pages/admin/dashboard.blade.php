@@ -3,7 +3,6 @@
 @section('content')
 <div x-data="adminDashboard()" x-init="init()" class="space-y-6">
     
-    {{-- KPI Summary Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <x-admin.dashboard.kpi-card 
             title="Penjualan Bulan Ini"
@@ -38,7 +37,6 @@
         />
     </div>
 
-    {{-- Charts Row --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <x-admin.dashboard.sales-profit-chart 
             class="lg:col-span-2" 
@@ -50,7 +48,6 @@
         />
     </div>
 
-    {{-- Top Products Table --}}
     <x-admin.dashboard.top-products-table 
         :loading="false" 
     />

@@ -15,11 +15,11 @@
     <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 sm:gap-6 relative">
 
         <div class="flex-1 flex flex-col gap-4 min-w-0 h-full">
-            <x-kasir.search-bar />
-            <x-kasir.product-grid />
+            <x-kasir.header.index />
+            <x-kasir.products.grid />
         </div>
 
-        <x-kasir.cart-sidebar />
+        <x-kasir.cart.sidebar />
 
     </div>
 
@@ -35,10 +35,11 @@
         </div>
     </button>
 
-    <x-kasir.payment-modal />
-    <x-kasir.receipt-modal />
-    <x-kasir.confirm-clear-modal />
-    <x-kasir.history-modal />
+    <x-kasir.modals.payment />
+    <x-kasir.modals.receipt />
+    <x-kasir.modals.confirm-clear />
+    <x-kasir.modals.history />
+
 
     <x-kasir.toast />
 </div>

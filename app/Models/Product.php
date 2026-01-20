@@ -2,10 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<string>
+     */
     protected $fillable = [
         'name',
         'image',
@@ -18,6 +26,11 @@ class Product extends Model
         'is_active'
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'is_active' => 'boolean',
         'price' => 'integer',
@@ -30,7 +43,7 @@ class Product extends Model
     /**
      * Get tags associated with this product
      */
-    public function tags()
+    public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
     }
@@ -38,18 +51,41 @@ class Product extends Model
     /**
      * Get discounts associated with this product
      */
-    public function discounts()
+    public function discounts(): BelongsToMany
     {
         return $this->belongsToMany(Discount::class, 'discount_product');
     }
 
-    public function transactionItems()
+    /**
+     * Get transaction items for this product
+     */
+    public function transactionItems(): HasMany
     {
         return $this->hasMany(TransactionItem::class);
     }
 
-    public function scopeActive($query)
+    /**
+     * Scope for active products
+     */
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
+
+    /**
+     * Check if product has low stock
+     */
+    public function hasLowStock(int $threshold = 20): bool
+    {
+        return $this->stock < $threshold;
+    }
+
+    /**
+     * Calculate profit margin
+     */
+    public function getProfitMargin(): int
+    {
+        return $this->price - $this->cost_price;
+    }
 }
+

@@ -3,23 +3,26 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreProductRequest;
+use App\Http\Requests\Admin\UpdateProductRequest;
 use App\Models\Product;
 use App\Models\Tag;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 class ProductController extends Controller
 {
     /**
      * Display a listing of products for admin
      */
-    public function index()
+    public function index(): View
     {
         $products = Product::with(['tags', 'discounts' => function($query) {
             $query->where('is_active', true)
                   ->where('start_date', '<=', now())
                   ->where('end_date', '>=', now());
         }])->orderBy('name')->get();
+        
         $tags = Tag::orderBy('name')->get();
         
         return view('pages.admin.products', compact('products', 'tags'));
@@ -28,7 +31,7 @@ class ProductController extends Controller
     /**
      * Get single product data for editing (JSON)
      */
-    public function show($id)
+    public function show(int $id): JsonResponse
     {
         $product = Product::with('tags')->findOrFail($id);
         
@@ -44,53 +47,23 @@ class ProductController extends Controller
     /**
      * Store new product
      */
-    public function store(Request $request)
+    public function store(StoreProductRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'price' => 'required|integer|min:0',
-            'cost_price' => 'required|integer|min:0',
-            'wholesale' => 'nullable|integer|min:0',
-            'wholesale_unit' => 'nullable|string|max:50',
-            'wholesale_qty_per_unit' => 'nullable|integer|min:1',
-            'stock' => 'required|integer|min:0',
-            'is_active' => 'required|boolean',
-            'tag_ids' => 'required|array|min:1',
-            'tag_ids.*' => 'exists:tags,id'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Validate profit margin (cost_price should not exceed price)
-        if ($request->cost_price > $request->price) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Harga modal tidak boleh lebih besar dari harga jual',
-                'errors' => [
-                    'cost_price' => ['Harga modal tidak boleh lebih besar dari harga jual']
-                ]
-            ], 422);
-        }
-
+        $validated = $request->validated();
+        
         $product = Product::create([
-            'name' => $request->name,
-            'price' => $request->price,
-            'cost_price' => $request->cost_price,
-            'wholesale' => $request->wholesale ?? 0,
-            'wholesale_unit' => $request->wholesale_unit,
-            'wholesale_qty_per_unit' => $request->wholesale_qty_per_unit ?? 1,
-            'stock' => $request->stock,
-            'is_active' => $request->is_active
+            'name' => $validated['name'],
+            'price' => $validated['price'],
+            'cost_price' => $validated['cost_price'],
+            'wholesale' => $validated['wholesale'] ?? 0,
+            'wholesale_unit' => $validated['wholesale_unit'] ?? null,
+            'wholesale_qty_per_unit' => $validated['wholesale_qty_per_unit'] ?? 1,
+            'stock' => $validated['stock'],
+            'is_active' => $validated['is_active']
         ]);
 
         // Sync tags
-        $product->tags()->sync($request->tag_ids);
+        $product->tags()->sync($validated['tag_ids']);
         
         // Load tags for response
         $product->load('tags');
@@ -106,55 +79,24 @@ class ProductController extends Controller
     /**
      * Update product data
      */
-    public function update(Request $request, $id)
+    public function update(UpdateProductRequest $request, int $id): JsonResponse
     {
         $product = Product::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'price' => 'required|integer|min:0',
-            'cost_price' => 'required|integer|min:0',
-            'wholesale' => 'nullable|integer|min:0',
-            'wholesale_unit' => 'nullable|string|max:50',
-            'wholesale_qty_per_unit' => 'nullable|integer|min:1',
-            'stock' => 'required|integer|min:0',
-            'is_active' => 'required|boolean',
-            'tag_ids' => 'required|array|min:1',
-            'tag_ids.*' => 'exists:tags,id'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Validate profit margin (cost_price should not exceed price)
-        if ($request->cost_price > $request->price) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Harga modal tidak boleh lebih besar dari harga jual',
-                'errors' => [
-                    'cost_price' => ['Harga modal tidak boleh lebih besar dari harga jual']
-                ]
-            ], 422);
-        }
+        $validated = $request->validated();
 
         $product->update([
-            'name' => $request->name,
-            'price' => $request->price,
-            'cost_price' => $request->cost_price,
-            'wholesale' => $request->wholesale ?? 0,
-            'wholesale_unit' => $request->wholesale_unit,
-            'wholesale_qty_per_unit' => $request->wholesale_qty_per_unit ?? 1,
-            'stock' => $request->stock,
-            'is_active' => $request->is_active
+            'name' => $validated['name'],
+            'price' => $validated['price'],
+            'cost_price' => $validated['cost_price'],
+            'wholesale' => $validated['wholesale'] ?? 0,
+            'wholesale_unit' => $validated['wholesale_unit'] ?? null,
+            'wholesale_qty_per_unit' => $validated['wholesale_qty_per_unit'] ?? 1,
+            'stock' => $validated['stock'],
+            'is_active' => $validated['is_active']
         ]);
 
         // Sync tags
-        $product->tags()->sync($request->tag_ids);
+        $product->tags()->sync($validated['tag_ids']);
         
         // Load tags for response
         $product->load('tags');
@@ -170,7 +112,7 @@ class ProductController extends Controller
     /**
      * Delete product
      */
-    public function destroy($id)
+    public function destroy(int $id): JsonResponse
     {
         $product = Product::findOrFail($id);
         

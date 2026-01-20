@@ -3,10 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
 class Tag extends Model
 {
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<string>
+     */
     protected $fillable = [
         'name',
         'slug',
@@ -16,22 +22,37 @@ class Tag extends Model
     /**
      * Get products that have this tag
      */
-    public function products()
+    public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class);
     }
 
     /**
-     * Auto-generate slug from name
+     * Get discounts that apply to this tag
      */
-    protected static function boot()
+    public function discounts(): BelongsToMany
+    {
+        return $this->belongsToMany(Discount::class, 'discount_tag');
+    }
+
+    /**
+     * Boot method to auto-generate slug
+     */
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::creating(function ($tag) {
+        static::creating(function (Tag $tag) {
             if (empty($tag->slug)) {
+                $tag->slug = Str::slug($tag->name);
+            }
+        });
+
+        static::updating(function (Tag $tag) {
+            if ($tag->isDirty('name') && empty($tag->slug)) {
                 $tag->slug = Str::slug($tag->name);
             }
         });
     }
 }
+
