@@ -1,6 +1,5 @@
 document.addEventListener("alpine:init", () => {
     Alpine.data("kasirSystem", () => ({
-        // State
         searchQuery: "",
         viewMode: "grid",
         selectedTags: [],
@@ -78,7 +77,9 @@ document.addEventListener("alpine:init", () => {
                         // Discount properties
                         discount: p.discount || null,
                         hasDiscount: p.discount ? true : false,
-                        discountedPrice: p.discount ? p.discount.discounted_price : p.price,
+                        discountedPrice: p.discount
+                            ? p.discount.discounted_price
+                            : p.price,
                         originalPrice: p.price,
                     }));
                 }
@@ -220,12 +221,12 @@ document.addEventListener("alpine:init", () => {
             if (this.isWholesale(item)) {
                 return item.wholesalePricePerPiece;
             }
-            
+
             // Use discounted price if available
             if (item.hasDiscount) {
                 return item.discountedPrice;
             }
-            
+
             return item.price;
         },
 
