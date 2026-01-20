@@ -53,26 +53,51 @@ class Discount extends Model
 
     /**
      * Scope untuk filter diskon yang aktif
-     * Updated to use datetime comparison instead of date-only
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true)
-                    ->where('start_date', '<=', now())
-                    ->where('end_date', '>=', now());
+        return $query->where(function($q) {
+            $q->where('is_active', true)
+              ->orWhere('auto_activate', true);
+        })
+        ->where('start_date', '<=', now())
+        ->where('end_date', '>=', now());
     }
 
     /**
      * Check apakah diskon sedang berlaku
-     * Updated to use datetime comparison
      */
     public function isValid(): bool
     {
-        if (!$this->is_active) {
+        $activeFlags = $this->is_active || $this->auto_activate;
+        if (!$activeFlags) {
             return false;
         }
 
         $now = now();
         return $now >= $this->start_date && $now <= $this->end_date;
+    }
+
+    /**
+     * Get computed status
+     */
+    public function getStatusAttribute(): string
+    {
+        $now = now();
+        
+        if ($now < $this->start_date) {
+            return 'waiting'; // Menunggu
+        }
+        
+        if ($now > $this->end_date) {
+            return 'expired'; // Berakhir
+        }
+
+        // Within date range
+        if ($this->is_active || $this->auto_activate) {
+            return 'active'; // Aktif
+        }
+
+        return 'disabled'; // Dinonaktifkan (Manual)
     }
 }

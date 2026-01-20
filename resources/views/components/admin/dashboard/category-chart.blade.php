@@ -2,8 +2,8 @@
 
 <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
     <div class="mb-6">
-        <h3 class="text-lg font-bold text-slate-900">Distribusi Kategori</h3>
-        <p class="text-sm text-slate-500 mt-1">Kontribusi Penjualan</p>
+        <h3 class="text-lg font-bold text-slate-900">Distribusi per label</h3>
+        <p class="text-sm text-slate-500 mt-1">Distribusi Hari Ini</p>
     </div>
     <div class="relative" style="height: 300px;">
         <template x-if="loading">

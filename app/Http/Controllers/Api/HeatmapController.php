@@ -40,23 +40,38 @@ class HeatmapController extends Controller
                 ->orderBy('hour')
                 ->get();
 
-            // Prepare data for line chart (7 series, one per day)
-            $dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-            $series = [];
+            // Prepare heatmap matrix
+            $heatmap = [];
+            $maxValue = 0;
+            $peakDay = null;
+            $peakHour = null;
             
-            // Initialize series for each day
             for ($day = 0; $day <= 6; $day++) {
-                $hourlyData = [];
-                
-                // Business hours only: 8-22 (15 hours)
+                $heatmap[$day] = [];
                 for ($hour = 8; $hour <= 22; $hour++) {
                     $count = $data->where('day_of_week', $day)
                                  ->where('hour', $hour)
                                  ->first();
                     
-                    $hourlyData[] = $count ? $count->transaction_count : 0;
+                    $val = $count ? (int) $count->transaction_count : 0;
+                    $heatmap[$day][$hour] = $val;
+                    
+                    if ($val > $maxValue) {
+                        $maxValue = $val;
+                        $peakDay = $day;
+                        $peakHour = $hour;
+                    }
                 }
-                
+            }
+
+            // Original series format for backward compatibility if needed
+            $dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            $series = [];
+            for ($day = 0; $day <= 6; $day++) {
+                $hourlyData = [];
+                for ($hour = 8; $hour <= 22; $hour++) {
+                    $hourlyData[] = $heatmap[$day][$hour];
+                }
                 $series[] = [
                     'name' => $dayNames[$day],
                     'data' => $hourlyData
@@ -72,6 +87,10 @@ class HeatmapController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
+                    'heatmap' => $heatmap,
+                    'max_value' => $maxValue,
+                    'peak_day' => $peakDay,
+                    'peak_hour' => $peakHour,
                     'series' => $series,
                     'hours' => $hourLabels,
                     'total_transactions' => $data->sum('transaction_count'),

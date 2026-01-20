@@ -5,7 +5,7 @@
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <x-admin.dashboard.kpi-card 
-            title="Penjualan Bulan Ini"
+            title="Penjualan Hari Ini"
             icon="trending-up"
             color="blue"
             :loading="false"
@@ -13,7 +13,7 @@
         />
         
         <x-admin.dashboard.kpi-card 
-            title="Laba Bulan Ini"
+            title="Laba Hari Ini"
             icon="dollar-sign"
             color="green"
             :loading="false"
@@ -21,7 +21,7 @@
         />
         
         <x-admin.dashboard.kpi-card 
-            title="Transaksi Bulan Ini"
+            title="Transaksi Hari Ini"
             icon="shopping-cart"
             color="purple"
             :loading="false"
@@ -47,6 +47,10 @@
             :loading="false" 
         />
     </div>
+
+    <x-admin.dashboard.recent-transactions-table 
+        :loading="false" 
+    />
 
     <x-admin.dashboard.top-products-table 
         :loading="false" 

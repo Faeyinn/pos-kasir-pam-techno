@@ -19,7 +19,8 @@ class DiscountController extends Controller
     {
         $discounts = Discount::with(['products:id,name', 'tags:id,name'])
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->append('status');
 
         $products = Product::active()
             ->select('id', 'name', 'price')

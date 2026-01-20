@@ -34,6 +34,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/sales-profit-trend', [AdminStatsController::class, 'salesProfitTrend'])->name('api.admin.sales-profit-trend');
         Route::get('/category-sales', [AdminStatsController::class, 'categorySales'])->name('api.admin.category-sales');
         Route::get('/top-products', [AdminStatsController::class, 'topProducts'])->name('api.admin.top-products');
+        Route::get('/recent-transactions', [AdminStatsController::class, 'recentTransactions'])->name('api.admin.recent-transactions');
         
         // Reports API
         Route::get('/reports/summary', [ReportController::class, 'getSummary'])->name('api.admin.reports.summary');

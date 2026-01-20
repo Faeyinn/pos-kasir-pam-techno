@@ -63,12 +63,19 @@
                         </div>
                     </td>
                     <td class="px-6 py-4">
-                        <button 
-                            @click="toggleStatus(discount.id, discount.is_active)"
-                            :class="discount.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                            class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
-                            x-text="discount.is_active ? 'Aktif' : 'Nonaktif'"
-                        ></button>
+                        <div class="flex flex-col gap-1">
+                            <button 
+                                @click="toggleStatus(discount.id, discount.is_active)"
+                                :class="{
+                                    'bg-green-100 text-green-700 hover:bg-green-200': discount.status === 'active',
+                                    'bg-blue-100 text-blue-700 hover:bg-blue-200': discount.status === 'waiting',
+                                    'bg-amber-100 text-amber-700 hover:bg-amber-200': discount.status === 'disabled',
+                                    'bg-slate-100 text-slate-500 hover:bg-slate-200': discount.status === 'expired'
+                                }"
+                                class="px-3 py-1 rounded-full text-xs font-semibold tracking-wide transition-colors text-center"
+                                x-text="getStatusLabel(discount.status)"
+                            ></button>
+                        </div>
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center justify-end gap-2">

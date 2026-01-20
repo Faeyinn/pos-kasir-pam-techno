@@ -16,7 +16,8 @@ function adminDashboard() {
             empty: true
         },
         topProducts: [],
-        period: 'monthly',  // Changed from 'daily' to show seeded data
+        recentTransactions: [],
+        period: 'monthly',  
         salesProfitChart: null,
         categoryChart: null,
 
@@ -34,7 +35,8 @@ function adminDashboard() {
                     this.fetchStats(),
                     this.fetchTrend(),
                     this.fetchCategorySales(),
-                    this.fetchTopProducts()
+                    this.fetchTopProducts(),
+                    this.fetchRecentTransactions()
                 ]);
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -51,7 +53,6 @@ function adminDashboard() {
             try {
                 const response = await fetch('/api/admin/stats');
                 const data = await response.json();
-                console.log('Stats data:', data);
                 if (data.success) {
                     this.stats = data.data;
                 }
@@ -64,7 +65,6 @@ function adminDashboard() {
             try {
                 const response = await fetch('/api/admin/sales-profit-trend');
                 const data = await response.json();
-                console.log('Trend data:', data);
                 if (data.success) {
                     this.trendData = data.data;
                 }
@@ -77,7 +77,6 @@ function adminDashboard() {
             try {
                 const response = await fetch('/api/admin/category-sales');
                 const data = await response.json();
-                console.log('Category data:', data);
                 if (data.success) {
                     this.categoryData = data.data;
                 }
@@ -90,12 +89,23 @@ function adminDashboard() {
             try {
                 const response = await fetch(`/api/admin/top-products?period=${this.period}`);
                 const data = await response.json();
-                console.log('Top products data:', data);
                 if (data.success) {
                     this.topProducts = data.data;
                 }
             } catch (error) {
                 console.error('Error fetching top products:', error);
+            }
+        },
+
+        async fetchRecentTransactions() {
+            try {
+                const response = await fetch('/api/admin/recent-transactions');
+                const data = await response.json();
+                if (data.success) {
+                    this.recentTransactions = data.data;
+                }
+            } catch (error) {
+                console.error('Error fetching recent transactions:', error);
             }
         },
 

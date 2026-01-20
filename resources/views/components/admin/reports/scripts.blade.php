@@ -20,7 +20,7 @@ document.addEventListener('alpine:init', () => {
         pagination: { current_page: 1, last_page: 1, from: 0, to: 0, total: 0 },
         
         charts: { salesProfit: null, profitTag: null, trxTrend: null, hourlyPattern: null },
-        hourlyData: { series: [], hours: [], total_transactions: 0, period: {} },
+        heatmapData: { heatmap: {}, hours: [], total_transactions: 0, period: {}, max_value: 1, peak_day: null, peak_hour: null },
 
         init() {
             this.loadData();
@@ -181,12 +181,29 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(`/api/admin/heatmap/frequency?${params}`);
                 const data = await res.json();
                 if (data.success) {
-                    this.hourlyData = data.data;
-                    this.$nextTick(() => this.renderHourlyChart());
+                    this.heatmapData = data.data;
                 }
             } catch (e) {
-                console.error('Failed to load hourly pattern', e);
+                console.error('Failed to load heatmap data', e);
             }
+        },
+
+        getHeatmapColor(val, max) {
+            if (val === 0) return 'bg-slate-50 border border-slate-100';
+            const percent = val / max;
+            if (percent < 0.25) return 'bg-green-100';
+            if (percent < 0.5) return 'bg-green-300';
+            if (percent < 0.75) return 'bg-green-500 text-white';
+            return 'bg-green-700 text-white';
+        },
+
+        getHeatmapTooltip(day, hour) {
+            const count = this.heatmapData.heatmap?.[day]?.[hour] || 0;
+            return `${this.getDayName(day)}, Jam ${hour.toString().padStart(2, '0')}:00 - ${count} Transaksi`;
+        },
+
+        getDayName(day) {
+            return ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][day];
         },
 
         renderHourlyChart() {
@@ -196,17 +213,26 @@ document.addEventListener('alpine:init', () => {
             if (this.charts.hourlyPattern) this.charts.hourlyPattern.destroy();
 
             const ctx = canvas.getContext('2d');
-            const dayColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'];
+            const dayColors = [
+                'rgba(239, 68, 68, 0.7)',  // Red
+                'rgba(59, 130, 246, 0.7)',  // Blue
+                'rgba(16, 185, 129, 0.7)',  // Green
+                'rgba(245, 158, 11, 0.7)',  // Amber
+                'rgba(139, 92, 246, 0.7)',  // Purple
+                'rgba(6, 182, 212, 0.7)',   // Cyan
+                'rgba(236, 72, 153, 0.7)'   // Pink
+            ];
 
             const datasets = this.hourlyData.series.map((series, index) => ({
                 label: series.name,
                 data: series.data,
-                borderColor: dayColors[index],
+                borderColor: dayColors[index].replace('0.7', '1'),
                 backgroundColor: dayColors[index],
-                borderWidth: 2,
-                tension: 0.3,
-                pointRadius: 3,
-                pointHoverRadius: 5
+                borderWidth: 1.5,
+                tension: 0.4,
+                pointRadius: 2,
+                pointHoverRadius: 5,
+                fill: true // Enable filling for stacked area
             }));
 
             this.charts.hourlyPattern = new Chart(ctx, {
@@ -221,8 +247,17 @@ document.addEventListener('alpine:init', () => {
                         tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' transaksi' } }
                     },
                     scales: {
-                        y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-                        x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+                        y: { 
+                            stacked: true, // Enable stacking
+                            beginAtZero: true, 
+                            ticks: { precision: 0, font: { size: 10 } }, 
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' } 
+                        },
+                        x: { 
+                            stacked: true, // Enable stacking
+                            ticks: { font: { size: 10 } }, 
+                            grid: { display: false } 
+                        }
                     }
                 }
             });

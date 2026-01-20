@@ -159,6 +159,16 @@ document.addEventListener('alpine:init', () => {
             return 'Rp ' + new Intl.NumberFormat('id-ID').format(discount.value);
         },
 
+        getStatusLabel(status) {
+            const labels = {
+                'active': 'Aktif',
+                'waiting': 'Menunggu',
+                'expired': 'Berakhir',
+                'disabled': 'Nonaktif'
+            };
+            return labels[status] || 'Unknown';
+        },
+
         formatForInput(dateTimeString) {
             if (!dateTimeString) return '';
             const date = new Date(dateTimeString);
@@ -185,22 +195,38 @@ document.addEventListener('alpine:init', () => {
             return new Intl.NumberFormat('id-ID').format(num);
         },
 
-        getConclusion() {
-            const profitDiff = this.comparison.diff?.total_profit || 0;
-            const marginDiff = 
-                (this.comparison.with_discount?.profit_margin || 0) - 
-                (this.comparison.without_discount?.profit_margin || 0);
+        formatDiff(val, type = 'high') {
+            if (val === 0) return '<span class="text-slate-500">Tidak ada perubahan</span>';
             
-            if (profitDiff > 50) {
-                return `Meskipun margin turun ${Math.abs(marginDiff).toFixed(1)}%, 
-                        profit meningkat ${profitDiff}% karena volume transaksi meningkat signifikan. 
-                        <strong class="text-green-700">✅ Diskon EFEKTIF meningkatkan laba</strong>`;
-            } else if (profitDiff > 0) {
-                return `Profit meningkat ${profitDiff}% dengan diskon. 
-                        <strong class="text-green-700">✅ Diskon menguntungkan</strong>`;
+            const isPositive = val > 0;
+            const arrow = isPositive ? '↑' : '↓';
+            const color = isPositive ? 'text-green-600' : 'text-red-600';
+            const absVal = Math.abs(val);
+            
+            let label = '';
+            if (type === 'high') {
+                label = isPositive ? 'lebih tinggi' : 'lebih rendah';
+            } else {
+                label = isPositive ? 'lebih banyak' : 'lebih sedikit';
             }
-            return `⚠️ Profit turun ${Math.abs(profitDiff)}% dengan diskon. 
-                    Pertimbangkan untuk mengurangi nilai diskon atau meningkatkan minimum purchase.`;
+            
+            return `<span class="${color}">${arrow} ${isPositive ? '+' : ''}${absVal}% ${label}</span>`;
+        },
+
+        getConclusion() {
+            const profitWith = this.comparison.with_discount?.total_profit || 0;
+            const profitWithout = this.comparison.without_discount?.total_profit || 0;
+            const profitDiff = this.comparison.diff?.total_profit || 0;
+            
+            if (profitDiff > 0) {
+                return `Profit meningkat <strong class="text-green-700">${profitDiff}%</strong> dengan diskon. 
+                        <strong class="text-green-700">✅ Strategi diskon saat ini EFEKTIF</strong> meningkatkan laba bersih.`;
+            } else if (profitDiff < 0) {
+                return `Profit menurun <strong class="text-red-700">${Math.abs(profitDiff)}%</strong> saat menggunakan diskon. 
+                        <strong class="text-red-700">⚠️ Perlu evaluasi:</strong> Biaya diskon lebih besar daripada kenaikan volume penjualan. Pertimbangkan untuk mengurangi nilai diskon atau menargetkan produk dengan margin lebih tinggi.`;
+            }
+            
+            return `Tidak ada perbedaan signifikan pada profit bersih antara transaksi dengan dan tanpa diskon.`;
         },
 
         getROIIcon(roi) {

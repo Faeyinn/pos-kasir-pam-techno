@@ -13,25 +13,24 @@ use Carbon\Carbon;
 class AdminStatsController extends Controller
 {
     /**
-     * Get KPI summary for this month
+     * Get KPI summary for TODAY
      */
     public function stats()
     {
-        // Use this month instead of today
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
+        $startOfToday = Carbon::today();
+        $endOfToday = Carbon::today()->endOfDay();
 
-        // Total sales this month
-        $salesToday = Transaction::whereBetween('created_at', [$startOfMonth, $endOfMonth])->sum('total');
+        // Total sales TODAY
+        $salesToday = Transaction::whereBetween('created_at', [$startOfToday, $endOfToday])->sum('total');
 
-        // Calculate real profit this month
+        // Calculate real profit TODAY
         $profitToday = TransactionItem::join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
             ->join('products', 'transaction_items.product_id', '=', 'products.id')
-            ->whereBetween('transactions.created_at', [$startOfMonth, $endOfMonth])
+            ->whereBetween('transactions.created_at', [$startOfToday, $endOfToday])
             ->sum(DB::raw('(transaction_items.price - products.cost_price) * transaction_items.qty'));
 
-        // Total transactions this month
-        $transactionsToday = Transaction::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count();
+        // Total transactions TODAY
+        $transactionsToday = Transaction::whereBetween('created_at', [$startOfToday, $endOfToday])->count();
 
         // Low stock products (stock < 20)
         $lowStockCount = Product::where('stock', '<', 20)
@@ -50,32 +49,34 @@ class AdminStatsController extends Controller
     }
 
     /**
-     * Get sales and profit trend for last 7 days
+     * Get sales and profit trend per HOUR for Today
      * GET /api/admin/sales-profit-trend
      */
     public function salesProfitTrend()
     {
-        $days = 7;
-        $startDate = Carbon::today()->subDays($days - 1);
-
         $data = [];
         
-        for ($i = 0; $i < $days; $i++) {
-            $date = $startDate->copy()->addDays($i);
-            
-            $dailySales = Transaction::whereDate('created_at', $date)->sum('total');
-            
-            // Calculate real profit using cost_price
-            $dailyProfit = TransactionItem::join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-                ->join('products', 'transaction_items.product_id', '=', 'products.id')
-                ->whereDate('transactions.created_at', $date)
-                ->sum(DB::raw('(transaction_items.price - products.cost_price) * transaction_items.qty'));
+        // Group by hour for today
+        $hourlyStats = TransactionItem::join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+            ->join('products', 'transaction_items.product_id', '=', 'products.id')
+            ->whereDate('transactions.created_at', Carbon::today())
+            ->select(
+                DB::raw('HOUR(transactions.created_at) as hour'),
+                DB::raw('SUM(transaction_items.qty * transaction_items.price) as sales'),
+                DB::raw('SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as profit')
+            )
+            ->groupBy('hour')
+            ->get()
+            ->keyBy('hour');
 
+        // Fill all 24 hours
+        for ($i = 0; $i < 24; $i++) {
+            $stat = $hourlyStats->get($i);
+            
             $data[] = [
-                'date' => $date->format('Y-m-d'),
-                'label' => $date->format('d M'),
-                'sales' => (int) $dailySales,
-                'profit' => (int) $dailyProfit,
+                'label' => sprintf('%02d:00', $i),
+                'sales' => $stat ? (int) $stat->sales : 0,
+                'profit' => $stat ? (int) $stat->profit : 0,
             ];
         }
 
@@ -86,17 +87,18 @@ class AdminStatsController extends Controller
     }
 
     /**
-     * Get category sales distribution
+     * Get category sales distribution for TODAY
      * GET /api/admin/category-sales
      */
     public function categorySales()
     {
         try {
-            // Use tag relationships instead of JSON extraction
             $categorySales = DB::table('transaction_items')
                 ->join('products', 'transaction_items.product_id', '=', 'products.id')
                 ->join('product_tag', 'products.id', '=', 'product_tag.product_id')
                 ->join('tags', 'product_tag.tag_id', '=', 'tags.id')
+                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+                ->whereDate('transactions.created_at', Carbon::today())
                 ->select('tags.name as category', DB::raw('SUM(transaction_items.subtotal) as total_sales'))
                 ->groupBy('tags.id', 'tags.name')
                 ->orderByDesc('total_sales')
@@ -115,7 +117,6 @@ class AdminStatsController extends Controller
                 }
             }
 
-            // If no data, return empty state
             if (empty($labels)) {
                 return response()->json([
                     'success' => true,
@@ -138,7 +139,6 @@ class AdminStatsController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            // Return empty state on error instead of failing
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -153,11 +153,11 @@ class AdminStatsController extends Controller
 
     /**
      * Get top selling products
-     * GET /api/admin/top-products?period=daily|weekly|monthly
+     * Ordered by QUANTITY sold
      */
     public function topProducts(Request $request)
     {
-        $period = $request->input('period', 'daily');
+        $period = $request->input('period', 'monthly');
         
         $query = TransactionItem::select(
                 'products.name as product_name',
@@ -167,7 +167,6 @@ class AdminStatsController extends Controller
             ->join('products', 'transaction_items.product_id', '=', 'products.id')
             ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id');
 
-        // Apply period filter
         switch ($period) {
             case 'weekly':
                 $query->where('transactions.created_at', '>=', Carbon::now()->subWeek());
@@ -183,11 +182,10 @@ class AdminStatsController extends Controller
 
         $topProducts = $query
             ->groupBy('products.id', 'products.name')
-            ->orderByDesc('total_sales')
+            ->orderByDesc('total_qty') // Changed from total_sales
             ->limit(10)
             ->get();
 
-        // Add ranking
         $rankedProducts = $topProducts->map(function ($item, $index) {
             return [
                 'rank' => $index + 1,
@@ -202,6 +200,34 @@ class AdminStatsController extends Controller
             'data' => $rankedProducts,
             'period' => $period,
             'empty' => $rankedProducts->isEmpty()
+        ]);
+    }
+
+    /**
+     * Get recent transactions
+     * GET /api/admin/recent-transactions
+     */
+    public function recentTransactions()
+    {
+        $transactions = Transaction::with(['user:id,name'])
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(function ($t) {
+                return [
+                    'id' => $t->id,
+                    'transaction_number' => $t->transaction_number,
+                    'total' => (int) $t->total,
+                    'cashier' => $t->user->name ?? 'System',
+                    'time' => $t->created_at->diffForHumans(),
+                    'payment_method' => $t->payment_method,
+                    'status' => 'Selesai'
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $transactions
         ]);
     }
 }

@@ -15,21 +15,21 @@
 
             <div class="space-y-4">
                 <div>
-                    <p class="text-xs text-slate-500">Rata-rata Transaksi</p>
+                    <p class="text-xs text-slate-500">Rata-rata Belanja per Nota</p>
                     <p class="text-2xl font-bold text-slate-900" 
                        x-text="'Rp ' + formatNumber(comparison.without_discount?.avg_transaction || 0)">
                     </p>
                 </div>
 
                 <div>
-                    <p class="text-xs text-slate-500">Total Revenue</p>
+                    <p class="text-xs text-slate-500">Total Penjualan (Omzet)</p>
                     <p class="text-2xl font-bold text-slate-900"
                        x-text="'Rp ' + formatNumber(comparison.without_discount?.total_revenue || 0)">
                     </p>
                 </div>
 
                 <div>
-                    <p class="text-xs text-slate-500">Total Profit</p>
+                    <p class="text-xs text-slate-500">Keuntungan Bersih (Laba)</p>
                     <p class="text-2xl font-bold text-slate-900"
                        x-text="'Rp ' + formatNumber(comparison.without_discount?.total_profit || 0)">
                     </p>
@@ -58,39 +58,30 @@
 
             <div class="space-y-4">
                 <div>
-                    <p class="text-xs text-slate-500">Rata-rata Transaksi</p>
+                    <p class="text-xs text-slate-500">Rata-rata Belanja per Nota</p>
                     <p class="text-2xl font-bold text-slate-900"
                        x-text="'Rp ' + formatNumber(comparison.with_discount?.avg_transaction || 0)">
                     </p>
-                    <p class="text-sm font-medium"
-                       :class="(comparison.diff?.avg_transaction || 0) > 0 ? 'text-green-600' : 'text-red-600'"
-                       x-text="'↑ +' + Math.abs(comparison.diff?.avg_transaction || 0) + '% lebih tinggi'">
-                    </p>
+                    <div class="text-sm font-medium" x-html="formatDiff(comparison.diff?.avg_transaction || 0, 'high')"></div>
                 </div>
 
                 <div>
-                    <p class="text-xs text-slate-500">Total Revenue</p>
+                    <p class="text-xs text-slate-500">Total Penjualan (Omzet)</p>
                     <p class="text-2xl font-bold text-slate-900"
                        x-text="'Rp ' + formatNumber(comparison.with_discount?.total_revenue || 0)">
                     </p>
-                    <p class="text-sm font-medium"
-                       :class="(comparison.diff?.total_revenue || 0) > 0 ? 'text-green-600' : 'text-red-600'"
-                       x-text="'↑ +' + Math.abs(comparison.diff?.total_revenue || 0) + '% lebih tinggi'">
-                    </p>
+                    <div class="text-sm font-medium" x-html="formatDiff(comparison.diff?.total_revenue || 0, 'high')"></div>
                 </div>
 
                 <div>
-                    <p class="text-xs text-slate-500">Total Profit</p>
+                    <p class="text-xs text-slate-500">Keuntungan Bersih (Laba)</p>
                     <p class="text-2xl font-bold text-slate-900"
                        x-text="'Rp ' + formatNumber(comparison.with_discount?.total_profit || 0)">
                     </p>
                     <p class="text-xs text-slate-500"
                        x-text="'(' + (comparison.with_discount?.profit_margin || 0) + '% margin)'">
                     </p>
-                    <p class="text-sm font-medium"
-                       :class="(comparison.diff?.total_profit || 0) > 0 ? 'text-green-600' : 'text-red-600'"
-                       x-text="'↑ +' + Math.abs(comparison.diff?.total_profit || 0) + '% lebih tinggi'">
-                    </p>
+                    <div class="text-sm font-medium" x-html="formatDiff(comparison.diff?.total_profit || 0, 'high')"></div>
                 </div>
 
                 <div>
@@ -98,10 +89,7 @@
                     <p class="text-2xl font-bold text-slate-900"
                        x-text="(comparison.with_discount?.transaction_count || 0) + ' transaksi'">
                     </p>
-                    <p class="text-sm font-medium"
-                       :class="(comparison.diff?.transaction_count || 0) > 0 ? 'text-green-600' : 'text-red-600'"
-                       x-text="'↑ +' + Math.abs(comparison.diff?.transaction_count || 0) + '% lebih banyak'">
-                    </p>
+                    <div class="text-sm font-medium" x-html="formatDiff(comparison.diff?.transaction_count || 0, 'count')"></div>
                 </div>
             </div>
         </div>

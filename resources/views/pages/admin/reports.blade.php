@@ -12,7 +12,7 @@
         <x-admin.reports.charts />
         
         <div class="mt-6">
-            <x-admin.reports.hourly-chart />
+            <x-admin.reports.heatmap />
         </div>
         
         <x-admin.reports.table />

@@ -26,46 +26,60 @@ class DiscountAnalyticsController extends Controller
                 ? Carbon::parse($request->end_date)
                 : Carbon::now();
 
+            // Base query for transactions with profit calculation
+            $baseQuery = DB::table('transactions')
+                ->join('transaction_items', 'transactions.id', '=', 'transaction_items.transaction_id')
+                ->join('products', 'transaction_items.product_id', '=', 'products.id')
+                ->whereBetween('transactions.created_at', [$startDate, $endDate]);
+
             // Get transactions WITHOUT discount
-            $withoutDiscount = DB::table('transactions')
-                ->whereNull('discount_id')
-                ->whereBetween('created_at', [$startDate, $endDate])
+            $withoutDiscount = (clone $baseQuery)
+                ->whereNull('transactions.discount_id')
                 ->selectRaw('
-                    COUNT(*) as transaction_count,
-                    AVG(total) as avg_transaction,
-                    SUM(total) as total_revenue,
-                    SUM(total - subtotal) as total_profit
+                    COUNT(DISTINCT transactions.id) as transaction_count,
+                    AVG(transactions.total) as avg_transaction,
+                    SUM(transaction_items.qty * transaction_items.price) as total_revenue,
+                    SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as total_profit
                 ')
                 ->first();
 
             // Get transactions WITH discount
-            $withDiscount = DB::table('transactions')
-                ->whereNotNull('discount_id')
-                ->whereBetween('created_at', [$startDate, $endDate])
+            $withDiscount = (clone $baseQuery)
+                ->whereNotNull('transactions.discount_id')
                 ->selectRaw('
-                    COUNT(*) as transaction_count,
-                    AVG(total) as avg_transaction,
-                    SUM(total) as total_revenue,
-                    SUM(total - subtotal) as total_profit
+                    COUNT(DISTINCT transactions.id) as transaction_count,
+                    AVG(transactions.total) as avg_transaction,
+                    SUM(transaction_items.qty * transaction_items.price) as total_revenue,
+                    SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as total_profit
                 ')
                 ->first();
 
-            // Calculate differences  
+            // Adjust profit for "With Discount" to account for transaction-level discount
+            $totalTransactionDiscount = DB::table('transactions')
+                ->whereNotNull('discount_id')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->sum('discount_amount');
+            
+            if ($withDiscount) {
+                $withDiscount->total_profit = ($withDiscount->total_profit ?? 0) - $totalTransactionDiscount;
+            }
+
+            // Calculate differences - Comparison is "With Discount" vs "Without Discount"
             $avgTransDiff = $withoutDiscount->avg_transaction > 0
                 ? round((($withDiscount->avg_transaction - $withoutDiscount->avg_transaction) / $withoutDiscount->avg_transaction) * 100, 1)
-                : 0;
+                : ($withDiscount->avg_transaction > 0 ? 100 : 0);
 
             $revenueDiff = $withoutDiscount->total_revenue > 0
                 ? round((($withDiscount->total_revenue - $withoutDiscount->total_revenue) / $withoutDiscount->total_revenue) * 100, 1)
-                : 0;
+                : ($withDiscount->total_revenue > 0 ? 100 : 0);
 
             $profitDiff = $withoutDiscount->total_profit > 0
                 ? round((($withDiscount->total_profit - $withoutDiscount->total_profit) / $withoutDiscount->total_profit) * 100, 1)
-                : 0;
+                : ($withDiscount->total_profit > 0 ? 100 : 0);
 
             $transCountDiff = $withoutDiscount->transaction_count > 0
                 ? round((($withDiscount->transaction_count - $withoutDiscount->transaction_count) / $withoutDiscount->transaction_count) * 100, 1)
-                : 0;
+                : ($withDiscount->transaction_count > 0 ? 100 : 0);
 
             // Calculate profit margins
             $withoutMargin = $withoutDiscount->total_revenue > 0
@@ -78,22 +92,26 @@ class DiscountAnalyticsController extends Controller
 
             // Get per-discount performance
             $performance = DB::table('discounts')
-                ->leftJoin('transactions', 'discounts.id', '=', 'transactions.discount_id')
+                ->join('transactions', 'discounts.id', '=', 'transactions.discount_id')
+                ->join('transaction_items', 'transactions.id', '=', 'transaction_items.transaction_id')
+                ->join('products', 'transaction_items.product_id', '=', 'products.id')
                 ->whereBetween('transactions.created_at', [$startDate, $endDate])
                 ->select(
                     'discounts.id',
                     'discounts.name',
                     'discounts.type',
                     'discounts.value',
-                    DB::raw('COUNT(transactions.id) as usage_count'),
+                    DB::raw('COUNT(DISTINCT transactions.id) as usage_count'),
                     DB::raw('SUM(transactions.discount_amount) as total_discount_given'),
-                    DB::raw('SUM(transactions.total) as total_revenue'),
-                    DB::raw('SUM(transactions.total - transactions.subtotal) as total_profit')
+                    DB::raw('SUM(transaction_items.qty * transaction_items.price) as total_revenue'),
+                    DB::raw('SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as raw_profit')
                 )
                 ->groupBy('discounts.id', 'discounts.name', 'discounts.type', 'discounts.value')
-                ->having('usage_count', '>', 0)
                 ->get()
                 ->map(function ($item) {
+                    // Net profit = raw profit from items - transaction level discount
+                    $netProfit = $item->raw_profit - $item->total_discount_given;
+                    
                     $roi = $item->total_discount_given > 0
                         ? round(($item->total_revenue / $item->total_discount_given) * 100, 0)
                         : 0;
@@ -104,9 +122,9 @@ class DiscountAnalyticsController extends Controller
                         'type' => $item->type,
                         'value' => $item->value,
                         'usage_count' => (int) $item->usage_count,
-                        'total_discount_given' => (int) ($item->total_discount_given ?? 0),
-                        'total_revenue' => (int) ($item->total_revenue ?? 0),
-                        'total_profit' => (int) ($item->total_profit ?? 0),
+                        'total_discount_given' => (int) $item->total_discount_given,
+                        'total_revenue' => (int) $item->total_revenue,
+                        'total_profit' => (int) $netProfit,
                         'roi_percentage' => $roi
                     ];
                 })
