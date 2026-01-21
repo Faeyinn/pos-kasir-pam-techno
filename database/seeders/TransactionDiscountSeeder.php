@@ -18,22 +18,35 @@ class TransactionDiscountSeeder extends Seeder
     public function run(): void
     {
         // 1. Dapatkan User Utama (Admin)
-        $user = User::first() ?? User::factory()->create();
+        $user = User::where('role', 'admin')->first() ?? User::first();
+        if (!$user) {
+            $this->call(UserSeeder::class);
+            $user = User::first();
+        }
 
         // 2. Siapkan Produk dan Tag
-        // Pastikan ada produk untuk dijual
-        if (Product::count() < 10) {
-            $this->call(ProductTagSeeder::class);
+        // Pastikan ada produk dan tag untuk dijual
+        if (Tag::count() == 0) {
+            $this->call(TagSeeder::class);
+        }
+
+        if (Product::count() == 0) {
+            $this->call(ProductSeeder::class);
         }
         
         $products = Product::all();
         $tags = Tag::all();
 
+        if ($products->isEmpty() || $tags->isEmpty()) {
+            $this->command->error('Gagal memuat produk atau tag. Pastikan seeder produk dan tag berfungsi.');
+            return;
+        }
+
         // 3. Buat Diskon Riil (Jika belum ada yang cocok)
         $discounts = [];
         
         // Diskon Persentase (Efektif)
-        $discounts[] = Discount::updateOrCreate(
+        $promoGajian = Discount::updateOrCreate(
             ['name' => 'Promo Gajian 10%'],
             [
                 'type' => 'percentage',
@@ -45,10 +58,11 @@ class TransactionDiscountSeeder extends Seeder
                 'auto_activate' => true
             ]
         );
-        $discounts[0]->tags()->sync($tags->pluck('id')->random(min(2, $tags->count())));
+        $promoGajian->tags()->sync($tags->pluck('id')->random(min(3, $tags->count())));
+        $discounts[] = $promoGajian;
 
         // Diskon Fixed (Biasa)
-        $discounts[] = Discount::updateOrCreate(
+        $potonganLangsung = Discount::updateOrCreate(
             ['name' => 'Potongan Langsung 5rb'],
             [
                 'type' => 'fixed',
@@ -60,7 +74,8 @@ class TransactionDiscountSeeder extends Seeder
                 'auto_activate' => true
             ]
         );
-        $discounts[1]->products()->sync($products->pluck('id')->random(min(5, $products->count())));
+        $potonganLangsung->products()->sync($products->pluck('id')->random(min(5, $products->count())));
+        $discounts[] = $potonganLangsung;
 
         // 4. Buat Data Transaksi (30 Hari Terakhir)
         $this->command->info('Membuat data transaksi... Harap tunggu.');
@@ -68,21 +83,26 @@ class TransactionDiscountSeeder extends Seeder
         DB::beginTransaction();
         try {
             for ($i = 0; $i < 400; $i++) {
-                $date = Carbon::now()->subDays(rand(0, 30))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
+                // Generate random date in the last 30 days
+                $date = Carbon::now()
+                    ->subDays(rand(0, 30))
+                    ->subHours(rand(0, 23))
+                    ->subMinutes(rand(0, 59))
+                    ->subSeconds(rand(0, 59));
                 
-                // Randomly choose if this transaction has a discount (30% chance)
-                $hasDiscount = rand(1, 10) <= 3;
+                // Randomly choose if this transaction has a discount (40% chance)
+                $hasDiscount = rand(1, 10) <= 4;
                 $discount = $hasDiscount ? $discounts[array_rand($discounts)] : null;
                 
-                // Pick random items (1-5 items)
-                $numItems = rand(1, 5);
-                $selectedProducts = $products->random($numItems);
+                // Pick random items (1-6 items)
+                $numItems = rand(1, 6);
+                $selectedProducts = $products->random(min($numItems, $products->count()));
                 
                 $subtotal = 0;
                 $itemsData = [];
                 
                 foreach ($selectedProducts as $product) {
-                    $qty = rand(1, 3);
+                    $qty = rand(1, 5);
                     $itemSubtotal = $product->price * $qty;
                     $subtotal += $itemSubtotal;
                     
@@ -103,22 +123,21 @@ class TransactionDiscountSeeder extends Seeder
                     if ($discount->type === 'percentage') {
                         $discountAmount = ($subtotal * $discount->value) / 100;
                     } else {
-                        // Fixed discount, but shouldn't exceed subtotal
                         $discountAmount = min($discount->value, $subtotal);
                     }
                 }
 
-                $total = $subtotal - $discountAmount;
-                $received = ceil($total / 5000) * 5000; // Round up to nearest 5000
-                if ($received < $total) $received += 5000;
+                $total = max(0, $subtotal - $discountAmount);
+                $received = ceil($total / 1000) * 1000; // Round up to nearest 1000
+                if ($received < $total) $received += 1000;
 
                 $transaction = Transaction::create([
                     'transaction_number' => 'TRX-' . $date->format('YmdHis') . '-' . Str::upper(Str::random(4)),
                     'user_id' => $user->id,
                     'discount_id' => $discount ? $discount->id : null,
                     'discount_amount' => $discountAmount,
-                    'payment_type' => 'retail',
-                    'payment_method' => ['tunai', 'qris', 'ewallet'][rand(0, 2)],
+                    'payment_type' => rand(1, 10) > 8 ? 'wholesale' : 'retail',
+                    'payment_method' => ['tunai', 'qris', 'ewallet', 'kartu'][rand(0, 3)],
                     'subtotal' => $subtotal,
                     'total' => $total,
                     'amount_received' => $received,
@@ -133,10 +152,11 @@ class TransactionDiscountSeeder extends Seeder
                 }
             }
             DB::commit();
-            $this->command->info('Berhasil membuat 400 data transaksi dengan variasi diskon.');
+            $this->command->info('Berhasil membuat 400 data transaksi dengan variasi diskon dalam 30 hari terakhir.');
         } catch (\Exception $e) {
             DB::rollback();
             $this->command->error('Gagal membuat data: ' . $e->getMessage());
+            throw $e; // Re-throw to see the full stack trace
         }
     }
 }

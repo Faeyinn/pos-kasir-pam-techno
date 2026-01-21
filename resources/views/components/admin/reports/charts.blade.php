@@ -17,7 +17,7 @@
 
     {{-- Transaction Trend --}}
     <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm lg:col-span-2">
-        <h4 class="text-lg font-bold text-slate-900 mb-4">Tren Transaksi</h4>
+        <h4 class="text-lg font-bold text-slate-900 mb-4">Volume Transaksi Harian</h4>
         <div class="relative h-64 w-full">
             <canvas id="trxTrendChart"></canvas>
         </div>

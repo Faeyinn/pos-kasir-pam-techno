@@ -208,28 +208,63 @@
                     </div>
                 </div>
 
-                {{-- Date Range --}}
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">
                             Waktu Mulai <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="datetime-local" 
-                            x-model="formData.start_date"
-                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        >
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                x-ref="startDate"
+                                x-init="
+                                    const fp = flatpickr($refs.startDate, { 
+                                        enableTime: true, 
+                                        dateFormat: 'Y-m-d H:i',
+                                        altInput: true,
+                                        altFormat: 'd/m/Y H:i',
+                                        allowInput: true,
+                                        onChange: (selectedDates, dateStr) => { formData.start_date = dateStr }
+                                    });
+                                    $watch('formData.start_date', value => fp.setDate(value));
+                                "
+                                :value="formData.start_date"
+                                class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                                placeholder="dd/mm/yyyy jam:menit"
+                            >
+                            <div class="absolute right-3 top-2.5 text-slate-400 pointer-events-none">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">
                             Waktu Berakhir <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="datetime-local" 
-                            x-model="formData.end_date"
-                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        >
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                x-ref="endDate"
+                                x-init="
+                                    const fp = flatpickr($refs.endDate, { 
+                                        enableTime: true, 
+                                        dateFormat: 'Y-m-d H:i',
+                                        altInput: true,
+                                        altFormat: 'd/m/Y H:i',
+                                        allowInput: true,
+                                        onChange: (selectedDates, dateStr) => { formData.end_date = dateStr }
+                                    });
+                                    $watch('formData.end_date', value => fp.setDate(value));
+                                "
+                                :value="formData.end_date"
+                                class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                                placeholder="dd/mm/yyyy jam:menit"
+                            >
+                            <div class="absolute right-3 top-2.5 text-slate-400 pointer-events-none">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

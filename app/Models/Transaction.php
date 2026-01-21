@@ -23,7 +23,9 @@ class Transaction extends Model
         'subtotal',
         'total',
         'amount_received',
-        'change'
+        'change',
+        'created_at',
+        'updated_at'
     ];
 
     /**
