@@ -503,7 +503,8 @@ document.addEventListener("alpine:init", () => {
 
             lines.push("");
             lines.push(this.centerText("PAM TECHNO", WIDTH));
-            lines.push(this.centerText("Sistem Kasir Digital", WIDTH));
+            lines.push(this.centerText("Jl. M. Yunus No. 6, Lubuk Lintah, Kec. Kuranji, Kota Padang", WIDTH));
+            lines.push(this.centerText("Telp: 0895600077007", WIDTH));
             lines.push(SEPARATOR);
             lines.push("");
 
@@ -588,61 +589,20 @@ document.addEventListener("alpine:init", () => {
 
             const receiptText = lines.join("\n");
 
-            const printWindow = window.open(
-                "",
-                "_blank",
-                "width=400,height=600",
-            );
-
-            const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Struk - ${receipt.transactionNumber}</title>
-    <style>
-        @page {
-            margin: 2mm;
-            size: 58mm auto;
-        }
-        @media print {
-            body {
-                margin: 0;
-                padding: 0;
-            }
-        }
-        body {
-            font-family: 'Courier New', 'Lucida Console', Monaco, monospace;
-            font-size: 11px;
-            line-height: 1.3;
-            margin: 0;
-            padding: 5mm;
-            background: #fff;
-            color: #000;
-        }
-        pre {
-            font-family: inherit;
-            font-size: inherit;
-            line-height: inherit;
-            margin: 0;
-            padding: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-    </style>
-</head>
-<body>
-<pre>${receiptText}</pre>
-</body>
-</html>`;
-
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
-            printWindow.focus();
-
+            // Create Blob and download as .txt
+            const blob = new Blob([receiptText], { type: "text/plain;charset=utf-8" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `struk-${receipt.transactionNumber}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
             setTimeout(() => {
-                printWindow.print();
-                printWindow.close();
-            }, 300);
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
         },
     }));
 });
