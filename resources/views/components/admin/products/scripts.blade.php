@@ -110,6 +110,7 @@ document.addEventListener('alpine:init', () => {
             } else {
                 target[key].push(tagId);
             }
+            this.$nextTick(() => lucide.createIcons());
         },
 
         getTag(id) {
@@ -120,7 +121,7 @@ document.addEventListener('alpine:init', () => {
             this.addForm = {
                 name: '', price: 0, cost_price: 0, wholesale: 0,
                 wholesale_unit: '', wholesale_qty_per_unit: 1, stock: 0,
-                is_active: true, tags: []
+                is_active: true, tag_ids: []
             };
             this.addTagsInput = '';
             this.addErrors = {};
@@ -175,7 +176,7 @@ document.addEventListener('alpine:init', () => {
                         wholesale_qty_per_unit: data.data.wholesale_qty_per_unit || 1,
                         stock: data.data.stock,
                         is_active: data.data.is_active,
-                        tags: data.data.tags || []
+                        tag_ids: (data.data.tags || []).map(t => t.id)
                     };
                     this.tagsInput = (data.data.tags || []).join(', ');
                     this.errors = {};

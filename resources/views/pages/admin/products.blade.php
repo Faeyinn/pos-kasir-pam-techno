@@ -3,7 +3,7 @@
 @section('header', 'Manajemen Produk')
 
 @section('content')
-<div x-data="productManager">
+<div x-data="productManager" @toggle-tag="toggleTagList($event.detail.path, $event.detail.id)">
     <x-admin.products.header />
     <x-admin.products.table />
     <x-admin.products.add-modal />
