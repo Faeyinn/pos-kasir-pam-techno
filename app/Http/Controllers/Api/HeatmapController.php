@@ -48,7 +48,7 @@ class HeatmapController extends Controller
             
             for ($day = 0; $day <= 6; $day++) {
                 $heatmap[$day] = [];
-                for ($hour = 8; $hour <= 22; $hour++) {
+                for ($hour = 0; $hour <= 23; $hour++) {
                     $count = $data->where('day_of_week', $day)
                                  ->where('hour', $hour)
                                  ->first();
@@ -69,7 +69,7 @@ class HeatmapController extends Controller
             $series = [];
             for ($day = 0; $day <= 6; $day++) {
                 $hourlyData = [];
-                for ($hour = 8; $hour <= 22; $hour++) {
+                for ($hour = 0; $hour <= 23; $hour++) {
                     $hourlyData[] = $heatmap[$day][$hour];
                 }
                 $series[] = [
@@ -78,9 +78,9 @@ class HeatmapController extends Controller
                 ];
             }
 
-            // Hour labels for x-axis (8-22)
+            // Hour labels for x-axis (0-23)
             $hourLabels = [];
-            for ($hour = 8; $hour <= 22; $hour++) {
+            for ($hour = 0; $hour <= 23; $hour++) {
                 $hourLabels[] = str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00';
             }
 

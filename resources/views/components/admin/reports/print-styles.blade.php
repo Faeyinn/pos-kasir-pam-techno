@@ -15,8 +15,10 @@
         
         body {
             margin: 0;
-            padding: 15mm;
-            background: white;
+            padding: 10mm;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         
         .page-break-before { page-break-before: always; }
@@ -41,6 +43,8 @@
         .grid { display: grid !important; }
         
         * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
             overflow: visible !important;
             box-shadow: none !important;
             transition: none !important;
@@ -49,7 +53,7 @@
         
         body {
             color: #000 !important;
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
         
         a { text-decoration: none; color: inherit; }
@@ -57,6 +61,6 @@
     
     @page {
         size: A4 portrait;
-        margin: 15mm;
+        margin: 10mm;
     }
 </style>

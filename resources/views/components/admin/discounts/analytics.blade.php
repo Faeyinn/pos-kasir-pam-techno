@@ -1,11 +1,16 @@
 <div class="space-y-6">
-    <div class="border-t pt-6">
-        <h2 class="text-xl font-bold text-slate-900">
-            📊 Analisis Efektivitas Diskon
-        </h2>
-        <p class="text-sm text-slate-600 mt-1">
-            Data 30 hari terakhir • Update real-time
-        </p>
+    <div class="mb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-2 h-8 bg-indigo-500 rounded-full"></div>
+            <div>
+                <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight">
+                    Analisis Efektivitas Diskon
+                </h2>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                    Data Performa 30 Hari Terakhir • Real-time
+                </p>
+            </div>
+        </div>
     </div>
 
     <x-admin.discounts.analytics-comparison />
