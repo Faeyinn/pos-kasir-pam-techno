@@ -47,9 +47,20 @@
     }"
     x-init="getSelectedIds = () => {{ $modelName }}"
 >
-    <label class="block text-sm font-medium text-slate-700 mb-2">
-        Tag Produk <span class="text-red-500">*</span>
-    </label>
+    <div class="flex items-center justify-between mb-2">
+        <label class="block text-sm font-medium text-slate-700">
+            Tag Produk <span class="text-red-500">*</span>
+        </label>
+        
+        <button 
+            type="button" 
+            @click="$dispatch('open-manage-tags')"
+            class="flex items-center justify-center w-8 h-8 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-slate-100 transition-all shadow-sm"
+            title="Kelola Tag"
+        >
+            <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+        </button>
+    </div>
 
     <div class="relative mb-3">
         <!-- Search Input -->
@@ -63,7 +74,7 @@
                 @keydown.arrow-up.prevent="focusedIndex = Math.max(focusedIndex - 1, 0)"
                 @keydown.escape="searchQuery = ''"
                 class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                placeholder="Cari tag... (Tekan Enter untuk memilih)"
+                placeholder="Tambahkan tag untuk produk tersebut....."
             >
         </div>
 

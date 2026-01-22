@@ -63,5 +63,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         
         // Tags
         Route::get('/tags', [TagController::class, 'index'])->name('api.admin.tags');
+        Route::post('/tags', [TagController::class, 'store'])->name('api.admin.tags.store');
+        Route::put('/tags/{id}', [TagController::class, 'update'])->name('api.admin.tags.update');
+        Route::delete('/tags/{id}', [TagController::class, 'destroy'])->name('api.admin.tags.destroy');
     });
 });

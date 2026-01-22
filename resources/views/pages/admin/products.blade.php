@@ -9,6 +9,7 @@
     <x-admin.products.add-modal />
     <x-admin.products.edit-modal />
     <x-admin.products.toast />
+    <x-admin.tags.manager-modal />
 </div>
 
 @push('scripts')

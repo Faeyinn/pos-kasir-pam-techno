@@ -20,4 +20,57 @@ class TagController extends Controller
             'data' => $tags
         ]);
     }
+    /**
+     * Store a new tag
+     */
+    public function store(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:50|unique:tags,name',
+            'color' => 'required|string|max:7'
+        ]);
+
+        $tag = Tag::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tag berhasil ditambahkan',
+            'data' => $tag
+        ]);
+    }
+
+    /**
+     * Update a tag
+     */
+    public function update(\Illuminate\Http\Request $request, $id): JsonResponse
+    {
+        $tag = Tag::findOrFail($id);
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:50|unique:tags,name,' . $id,
+            'color' => 'required|string|max:7'
+        ]);
+
+        $tag->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tag berhasil diperbarui',
+            'data' => $tag
+        ]);
+    }
+
+    /**
+     * Delete a tag
+     */
+    public function destroy($id): JsonResponse
+    {
+        $tag = Tag::findOrFail($id);
+        $tag->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tag berhasil dihapus'
+        ]);
+    }
 }

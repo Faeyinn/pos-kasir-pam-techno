@@ -10,6 +10,9 @@ document.addEventListener('alpine:init', () => {
 
         init() {
             this.$nextTick(() => lucide.createIcons());
+            document.addEventListener('tags-updated', (e) => {
+                this.availableTags = e.detail;
+            });
         },
         
         get filteredProducts() {
