@@ -56,7 +56,7 @@
     <button 
         x-ref="button"
         @click="open = !open; $nextTick(() => window.lucide && lucide.createIcons())" 
-        class="h-full aspect-square flex items-center justify-center bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl sm:rounded-[2rem] shadow-sm hover:bg-gray-50 transition-all active:scale-95 relative"
+        class="h-full aspect-square flex items-center justify-center bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl sm:rounded-4xl shadow-sm hover:bg-gray-50 transition-all active:scale-95 relative"
         :class="selectedTags.length > 0 ? 'border-blue-500 bg-blue-50 text-blue-600' : 'text-gray-500'"
     >
         <i data-lucide="filter" class="w-6 h-6"></i>
@@ -96,7 +96,7 @@
                 </button>
             </div>
 
-            <div class="max-h-[400px] overflow-y-auto custom-scrollbar flex flex-col gap-4">
+            <div class="max-h-100 overflow-y-auto custom-scrollbar flex flex-col gap-4">
                 <template x-for="group in groupedTags" :key="group.letter">
                     <div class="w-full">
                         <div x-text="group.letter" class="text-xs font-bold text-gray-400 mb-2 border-b border-gray-100 pb-1 sticky top-0 bg-white z-10"></div>

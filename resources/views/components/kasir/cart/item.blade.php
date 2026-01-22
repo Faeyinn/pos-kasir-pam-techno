@@ -15,12 +15,23 @@
             </div>
         </template>
         
-        <div 
-            x-show="paymentType === 'wholesale'" 
-            class="text-[10px] font-semibold text-purple-600"
-            x-text="'(' + item.wholesaleUnit + ')'"
-        ></div>
+        <div class="text-[10px] font-semibold text-purple-600" x-text="'(' + (getSelectedUnit(item)?.name || '-') + ')'" ></div>
     </div>
+
+    <template x-if="item.units && item.units.length > 1">
+        <div class="mb-4">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Satuan</label>
+            <select
+                class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                :value="item.selectedUnitId"
+                @change="setItemUnit(item.id, $event.target.value)"
+            >
+                <template x-for="u in item.units" :key="u.id">
+                    <option :value="u.id" x-text="u.qtyPerUnit > 1 ? `${u.name} (@ ${u.qtyPerUnit})` : u.name"></option>
+                </template>
+            </select>
+        </div>
+    </template>
 
     <div class="flex items-end justify-between">
         <div class="flex items-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
@@ -30,9 +41,6 @@
         </div>
         <div class="text-right">
             <div class="text-[10px] text-gray-400 mb-0.5 flex items-center justify-end gap-1.5">
-                <template x-if="isWholesale(item)">
-                    <span class="line-through text-red-300 decoration-red-300/50 decoration-2">Rp <span x-text="formatNumber(item.price)"></span></span>
-                </template>
                 <span class="font-bold" :class="isWholesale(item) ? 'text-blue-600' : ''">
                     @ Rp <span x-text="formatNumber(getItemPrice(item))"></span>
                 </span>

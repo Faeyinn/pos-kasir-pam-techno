@@ -13,6 +13,7 @@
         body { font-family: 'Inter', sans-serif; }
         [x-cloak] { display: none !important; }
     </style>
+    @stack('head-scripts')
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div class="flex h-screen">

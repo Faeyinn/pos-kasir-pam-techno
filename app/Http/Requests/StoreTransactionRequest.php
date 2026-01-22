@@ -20,13 +20,13 @@ class StoreTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_type' => 'required|in:retail,wholesale',
-            'payment_method' => 'required|in:tunai,kartu,qris,ewallet',
-            'amount_received' => 'required|integer|min:0',
+            'jenis_transaksi' => 'nullable|in:eceran,grosir',
+            'metode_pembayaran' => 'required|in:tunai,kartu,qris,ewallet',
+            'jumlah_dibayar' => 'required|integer|min:0',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.qty' => 'required|integer|min:1',
-            'items.*.price' => 'required|integer|min:0'
+            'items.*.id_produk' => 'required|exists:produk,id_produk',
+            'items.*.id_satuan' => 'required|exists:produk_satuan,id_satuan',
+            'items.*.jumlah' => 'required|integer|min:1'
         ];
     }
 
@@ -36,23 +36,21 @@ class StoreTransactionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'payment_type.required' => 'Tipe pembayaran wajib dipilih',
-            'payment_type.in' => 'Tipe pembayaran tidak valid',
-            'payment_method.required' => 'Metode pembayaran wajib dipilih',
-            'payment_method.in' => 'Metode pembayaran tidak valid',
-            'amount_received.required' => 'Jumlah uang yang diterima wajib diisi',
-            'amount_received.integer' => 'Jumlah uang yang diterima harus berupa angka',
-            'amount_received.min' => 'Jumlah uang yang diterima tidak boleh negatif',
+            'jenis_transaksi.in' => 'Jenis transaksi tidak valid',
+            'metode_pembayaran.required' => 'Metode pembayaran wajib dipilih',
+            'metode_pembayaran.in' => 'Metode pembayaran tidak valid',
+            'jumlah_dibayar.required' => 'Jumlah uang yang dibayar wajib diisi',
+            'jumlah_dibayar.integer' => 'Jumlah uang yang dibayar harus berupa angka',
+            'jumlah_dibayar.min' => 'Jumlah uang yang dibayar tidak boleh negatif',
             'items.required' => 'Minimal satu item harus ditambahkan',
             'items.min' => 'Minimal satu item harus ditambahkan',
-            'items.*.product_id.required' => 'Produk wajib dipilih',
-            'items.*.product_id.exists' => 'Produk tidak ditemukan',
-            'items.*.qty.required' => 'Jumlah item wajib diisi',
-            'items.*.qty.integer' => 'Jumlah item harus berupa angka',
-            'items.*.qty.min' => 'Jumlah item minimal 1',
-            'items.*.price.required' => 'Harga item wajib diisi',
-            'items.*.price.integer' => 'Harga item harus berupa angka',
-            'items.*.price.min' => 'Harga item tidak boleh negatif',
+            'items.*.id_produk.required' => 'Produk wajib dipilih',
+            'items.*.id_produk.exists' => 'Produk tidak ditemukan',
+            'items.*.id_satuan.required' => 'Satuan produk wajib dipilih',
+            'items.*.id_satuan.exists' => 'Satuan produk tidak ditemukan',
+            'items.*.jumlah.required' => 'Jumlah item wajib diisi',
+            'items.*.jumlah.integer' => 'Jumlah item harus berupa angka',
+            'items.*.jumlah.min' => 'Jumlah item minimal 1',
         ];
     }
 }

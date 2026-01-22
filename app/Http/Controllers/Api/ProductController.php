@@ -22,7 +22,7 @@ class ProductController extends Controller
      */
     public function getTags()
     {
-        $tags = Tag::orderBy('name')->get();
+        $tags = Tag::orderBy('nama_tag')->get();
         return response()->json([
             'success' => true,
             'data' => $tags
@@ -31,45 +31,47 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        $query = Product::active()->with('tags');
+        $query = Product::active()->with(['tags', 'satuan']);
 
         // Filter by Tag (formerly Category)
         if ($request->has('category') && $request->category !== 'all') {
             $query->whereHas('tags', function($q) use ($request) {
-                $q->where('name', $request->category);
+                $q->where('nama_tag', $request->category);
             });
         }
 
         // Search by name
         if ($request->has('search') && $request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('nama_produk', 'like', '%' . $request->search . '%');
         }
 
-        $products = $query->orderBy('name')->get();
-        
-        // Hide cost_price from kasir
-        $products->makeHidden(['cost_price']);
+        $products = $query->orderBy('nama_produk')->get();
 
         // Add discount information to each product
         $products->transform(function ($product) {
-            $discount = $this->discountService->getDiscountForProduct($product->id);
+            $discount = $this->discountService->getDiscountForProduct($product->id_produk);
+
+            $defaultSatuan = $product->satuan
+                ->where('is_active', true)
+                ->firstWhere('is_default', true);
+
+            $hargaDefault = $defaultSatuan ? (int) $defaultSatuan->harga_jual : 0;
             
             if ($discount) {
-                // Calculate discounted price
                 $discountAmount = 0;
-                if ($discount->type === 'percentage') {
-                    $discountAmount = ($product->price * $discount->value) / 100;
+                if ($discount->tipe_diskon === 'persen') {
+                    $discountAmount = ($hargaDefault * $discount->nilai_diskon) / 100;
                 } else {
-                    $discountAmount = min($discount->value, $product->price);
+                    $discountAmount = min($discount->nilai_diskon, $hargaDefault);
                 }
-                
-                $discountedPrice = $product->price - $discountAmount;
-                
+
+                $discountedPrice = $hargaDefault - $discountAmount;
+
                 $product->discount = [
-                    'id' => $discount->id,
-                    'name' => $discount->name,
-                    'type' => $discount->type,
-                    'value' => $discount->value,
+                    'id_diskon' => $discount->id_diskon,
+                    'nama_diskon' => $discount->nama_diskon,
+                    'tipe_diskon' => $discount->tipe_diskon,
+                    'nilai_diskon' => $discount->nilai_diskon,
                     'discounted_price' => (int) $discountedPrice,
                     'discount_amount' => (int) $discountAmount,
                 ];
@@ -88,10 +90,7 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with('tags')->findOrFail($id);
-        
-        // Hide cost_price from kasir
-        $product->makeHidden(['cost_price']);
+        $product = Product::with(['tags', 'satuan'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -106,9 +105,9 @@ class ProductController extends Controller
         ]);
 
         $product = Product::findOrFail($id);
-        $product->stock -= $request->qty;
+        $product->stok -= $request->qty;
         
-        if ($product->stock < 0) {
+        if ($product->stok < 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Stok tidak mencukupi'

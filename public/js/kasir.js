@@ -47,11 +47,46 @@ document.addEventListener("alpine:init", () => {
                 const response = await fetch("/api/tags");
                 const data = await response.json();
                 if (data.success) {
-                    this.availableTags = data.data;
+                    this.availableTags = (data.data || []).map((t) => ({
+                        id: t.id_tag ?? t.id,
+                        name: t.nama_tag ?? t.name,
+                        color: t.color,
+                    }));
                 }
             } catch (error) {
                 console.error("Error fetching tags:", error);
             }
+        },
+
+        normalizeDiscount(discount) {
+            if (!discount) return null;
+
+            const rawType = discount.tipe_diskon ?? discount.type;
+            const rawValue = discount.nilai_diskon ?? discount.value;
+
+            return {
+                id: discount.id_diskon ?? discount.id,
+                name: discount.nama_diskon ?? discount.name,
+                type:
+                    rawType === "persen" || rawType === "percentage"
+                        ? "percentage"
+                        : "fixed",
+                value: Number(rawValue || 0),
+            };
+        },
+
+        applyDiscount(price, discount) {
+            const base = Number(price || 0);
+            if (!discount) return base;
+
+            if (discount.type === "percentage") {
+                return Math.max(
+                    0,
+                    Math.round(base - (base * discount.value) / 100),
+                );
+            }
+
+            return Math.max(0, base - Math.min(base, discount.value));
         },
 
         async fetchProducts() {
@@ -60,28 +95,74 @@ document.addEventListener("alpine:init", () => {
                 const response = await fetch("/api/products");
                 const data = await response.json();
                 if (data.success) {
-                    this.products = data.data.map((p) => ({
-                        id: p.id,
-                        name: p.name,
-                        image: p.image,
-                        price: p.price,
-                        wholesale: p.wholesale,
-                        wholesaleUnit: p.wholesale_unit,
-                        wholesaleQtyPerUnit: p.wholesale_qty_per_unit,
-                        stock: p.stock,
-                        tags: p.tags || [],
-                        wholesalePricePerPiece:
-                            p.wholesale_qty_per_unit > 0
-                                ? p.wholesale / p.wholesale_qty_per_unit
-                                : p.price,
-                        // Discount properties
-                        discount: p.discount || null,
-                        hasDiscount: p.discount ? true : false,
-                        discountedPrice: p.discount
-                            ? p.discount.discounted_price
-                            : p.price,
-                        originalPrice: p.price,
-                    }));
+                    this.products = (data.data || []).map((p) => {
+                        const units = (p.satuan || [])
+                            .filter((u) => u.is_active)
+                            .map((u) => ({
+                                id: u.id_satuan,
+                                name: u.nama_satuan,
+                                qtyPerUnit: Number(u.jumlah_per_satuan || 1),
+                                price: Number(u.harga_jual || 0),
+                                isDefault: !!u.is_default,
+                            }));
+
+                        const defaultUnit =
+                            units.find((u) => u.isDefault) || units[0] || null;
+                        const basePrice = defaultUnit ? defaultUnit.price : 0;
+
+                        const discount = this.normalizeDiscount(p.discount);
+                        const discountedBasePrice = discount
+                            ? this.applyDiscount(basePrice, discount)
+                            : basePrice;
+
+                        // For the product card/list: show one best "grosir" hint if any unit has qtyPerUnit > 1
+                        const wholesaleCandidate = units
+                            .filter((u) => u.qtyPerUnit > 1)
+                            .sort(
+                                (a, b) =>
+                                    a.price / a.qtyPerUnit -
+                                    b.price / b.qtyPerUnit,
+                            )[0];
+
+                        const mappedTags = (p.tags || []).map((t) => ({
+                            id: t.id_tag ?? t.id,
+                            name: t.nama_tag ?? t.name,
+                            color: t.color,
+                        }));
+
+                        return {
+                            id: p.id_produk ?? p.id,
+                            name: p.nama_produk ?? p.name,
+                            image: p.gambar ?? p.image,
+                            stock: Number(p.stok ?? p.stock ?? 0),
+                            tags: mappedTags,
+
+                            units,
+                            defaultUnitId: defaultUnit ? defaultUnit.id : null,
+
+                            // Keep existing UI expectations
+                            price: basePrice,
+                            originalPrice: basePrice,
+                            discount,
+                            hasDiscount: !!discount,
+                            discountedPrice: discountedBasePrice,
+
+                            wholesale:
+                                wholesaleCandidate && wholesaleCandidate.price
+                                    ? wholesaleCandidate.price
+                                    : 0,
+                            wholesaleUnit: wholesaleCandidate
+                                ? wholesaleCandidate.name
+                                : null,
+                            wholesaleQtyPerUnit: wholesaleCandidate
+                                ? wholesaleCandidate.qtyPerUnit
+                                : 0,
+                            wholesalePricePerPiece: wholesaleCandidate
+                                ? wholesaleCandidate.price /
+                                  wholesaleCandidate.qtyPerUnit
+                                : basePrice,
+                        };
+                    });
                 }
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -164,50 +245,148 @@ document.addEventListener("alpine:init", () => {
         },
 
         // ==================== CART ====================
+        getSelectedUnit(item) {
+            if (!item.units || item.units.length === 0) return null;
+            return (
+                item.units.find((u) => u.id === item.selectedUnitId) ||
+                item.units.find((u) => u.isDefault) ||
+                item.units[0]
+            );
+        },
+
+        getItemRequiredStock(item) {
+            const unit = this.getSelectedUnit(item);
+            const qtyPerUnit = unit ? unit.qtyPerUnit : 1;
+            return (Number(item.qty || 0) || 0) * qtyPerUnit;
+        },
+
+        syncPaymentType() {
+            this.paymentType = this.cart.some((item) => this.isWholesale(item))
+                ? "wholesale"
+                : "retail";
+        },
+
         addToCart(product) {
             const existingItem = this.cart.find(
                 (item) => item.id === product.id,
             );
             const requestQty = 1;
 
+            const defaultUnitId =
+                product.defaultUnitId ||
+                (product.units && product.units[0]
+                    ? product.units[0].id
+                    : null);
+
             if (existingItem) {
-                if (existingItem.qty + requestQty > existingItem.stock) {
+                const nextQty = existingItem.qty + requestQty;
+                const unit = this.getSelectedUnit(existingItem);
+                const qtyPerUnit = unit ? unit.qtyPerUnit : 1;
+                const requiredStock = nextQty * qtyPerUnit;
+
+                if (requiredStock > existingItem.stock) {
                     this.addNotification(
                         `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${existingItem.stock} unit.`,
                     );
                     return;
                 }
-                existingItem.qty += requestQty;
+
+                existingItem.qty = nextQty;
             } else {
-                if (requestQty > product.stock) {
+                const initialItem = {
+                    ...product,
+                    qty: requestQty,
+                    selectedUnitId: defaultUnitId,
+                };
+
+                if (this.getItemRequiredStock(initialItem) > product.stock) {
                     this.addNotification(
                         `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${product.stock} unit.`,
                     );
                     return;
                 }
-                this.cart.push({ ...product, qty: requestQty });
+
+                this.cart.push(initialItem);
             }
+
+            this.syncPaymentType();
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
         updateQty(productId, delta) {
             const item = this.cart.find((i) => i.id === productId);
             if (item) {
-                if (delta > 0 && item.qty + delta > item.stock) {
-                    this.addNotification(
-                        `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${item.stock} unit.`,
-                    );
-                    return;
+                const nextQty = item.qty + delta;
+                if (delta > 0) {
+                    const unit = this.getSelectedUnit(item);
+                    const qtyPerUnit = unit ? unit.qtyPerUnit : 1;
+                    const requiredStock = nextQty * qtyPerUnit;
+                    if (requiredStock > item.stock) {
+                        this.addNotification(
+                            `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${item.stock} unit.`,
+                        );
+                        return;
+                    }
                 }
-                item.qty += delta;
+
+                item.qty = nextQty;
+
                 if (item.qty <= 0) {
                     this.removeFromCart(productId);
+                    return;
                 }
+
+                this.syncPaymentType();
             }
+        },
+
+        setItemUnit(productId, newUnitId) {
+            const item = this.cart.find((i) => i.id === productId);
+            if (!item) return;
+
+            // Pastikan format ID sesuai (number)
+            newUnitId = Number(newUnitId);
+
+            // 1. Ambil Data Unit Lama (Sebelum berubah) untuk hitung stok dasar
+            // Karena kita menghapus x-model, item.selectedUnitId saat ini masih ID lama
+            const oldUnit = this.getSelectedUnit(item);
+            const oldQtyPerUnit = oldUnit ? Number(oldUnit.qtyPerUnit || 1) : 1;
+
+            // 2. Hitung Total Kuantitas dalam Satuan Dasar
+            // Contoh: 2 Lusin (per 12) = 24 Pcs (dasar)
+            const currentBaseQty = item.qty * oldQtyPerUnit;
+
+            // 3. Set Unit Baru
+            item.selectedUnitId = newUnitId;
+            const newUnit = this.getSelectedUnit(item);
+            const newQtyPerUnit = newUnit ? Number(newUnit.qtyPerUnit || 1) : 1;
+
+            // 4. Hitung Kuantitas Baru
+            // Contoh: 24 Pcs dijadikan Dus (per 24) = 1 Dus
+            // Contoh: 1 Pcs dijadikan Dus (per 40) = 0.025 Dus -> Dibulatkan ke 1 Dus (UX Enhancement)
+            let rawNewQty = currentBaseQty / newQtyPerUnit;
+
+            // Fitur User-Friendly:
+            // - Jika hasil konversi < 1 (misal 1 Pcs diubah ke Dus), otomatis set jadi 1 Dus.
+            // - Jika hasil konversi >= 1 (misal 40 Pcs diubah ke Dus), biarkan hasil konversinya.
+            if (rawNewQty < 1) {
+                this.addNotification(
+                    `Kuantitas disesuaikan ke minimal 1 ${newUnit ? newUnit.name : ""}`,
+                    "info",
+                );
+                item.qty = 1;
+            } else {
+                // Pembulatan presisi desimal (max 4 angka belakang koma)
+                item.qty = Math.round(rawNewQty * 10000) / 10000;
+            }
+
+            this.syncPaymentType();
+            this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
         removeFromCart(productId) {
             this.cart = this.cart.filter((item) => item.id !== productId);
+            this.syncPaymentType();
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
@@ -217,17 +396,14 @@ document.addEventListener("alpine:init", () => {
         },
 
         getItemPrice(item) {
-            // Priority: wholesale > discount > regular price
-            if (this.isWholesale(item)) {
-                return item.wholesalePricePerPiece;
+            const unit = this.getSelectedUnit(item);
+            const unitPrice = unit ? unit.price : item.price;
+
+            if (item.discount) {
+                return this.applyDiscount(unitPrice, item.discount);
             }
 
-            // Use discounted price if available
-            if (item.hasDiscount) {
-                return item.discountedPrice;
-            }
-
-            return item.price;
+            return unitPrice;
         },
 
         get cartTotal() {
@@ -242,11 +418,8 @@ document.addEventListener("alpine:init", () => {
         },
 
         isWholesale(item) {
-            return (
-                item.wholesale > 0 &&
-                item.wholesaleQtyPerUnit > 0 &&
-                item.qty >= item.wholesaleQtyPerUnit
-            );
+            const unit = this.getSelectedUnit(item);
+            return !!unit && Number(unit.qtyPerUnit || 1) > 1;
         },
 
         // ==================== TRANSACTIONS ====================
@@ -256,7 +429,7 @@ document.addEventListener("alpine:init", () => {
                 const data = await response.json();
                 if (data.success) {
                     this.transactionHistory = data.data.map((t) => ({
-                        transactionNumber: t.transaction_number,
+                        transactionNumber: t.nomor_transaksi,
                         date: new Date(t.created_at).toLocaleDateString(
                             "id-ID",
                             {
@@ -272,18 +445,21 @@ document.addEventListener("alpine:init", () => {
                                 minute: "2-digit",
                             },
                         ),
-                        cashier: t.user.name,
-                        paymentMethod: t.payment_method,
-                        amountReceived: t.amount_received,
-                        change: t.change,
+                        cashier: t.user.nama,
+                        paymentMethod: t.metode_pembayaran,
+                        amountReceived: t.jumlah_dibayar,
+                        change: t.kembalian,
                         items: t.items.map((item) => ({
-                            name: item.product_name,
-                            qty: item.qty,
-                            finalPrice: item.price,
+                            name: item.nama_produk,
+                            qty: item.jumlah,
+                            finalPrice: item.harga_jual,
                         })),
-                        paymentType: t.payment_type,
-                        subtotal: t.subtotal,
-                        total: t.total,
+                        paymentType:
+                            t.jenis_transaksi === "grosir"
+                                ? "wholesale"
+                                : "retail",
+                        subtotal: t.total_belanja,
+                        total: t.total_transaksi,
                     }));
                 }
             } catch (error) {
@@ -316,21 +492,19 @@ document.addEventListener("alpine:init", () => {
                 return;
             }
 
-            const effectivePaymentType = this.cart.some((item) =>
-                this.isWholesale(item),
-            )
-                ? "wholesale"
-                : "retail";
-
             const transactionData = {
-                payment_type: effectivePaymentType,
-                payment_method:
+                jenis_transaksi: this.cart.some((item) =>
+                    this.isWholesale(item),
+                )
+                    ? "grosir"
+                    : "eceran",
+                metode_pembayaran:
                     paymentModalData.selectedPaymentMethod || "tunai",
-                amount_received: amountReceived,
+                jumlah_dibayar: Math.round(amountReceived),
                 items: this.cart.map((item) => ({
-                    product_id: item.id,
-                    qty: item.qty,
-                    price: this.getItemPrice(item),
+                    id_produk: item.id,
+                    id_satuan: item.selectedUnitId,
+                    jumlah: item.qty,
                 })),
             };
 
@@ -358,7 +532,7 @@ document.addEventListener("alpine:init", () => {
                 const now = new Date(transaction.created_at);
 
                 const newReceipt = {
-                    transactionNumber: transaction.transaction_number,
+                    transactionNumber: transaction.nomor_transaksi,
                     date: now.toLocaleDateString("id-ID", {
                         day: "2-digit",
                         month: "long",
@@ -368,18 +542,21 @@ document.addEventListener("alpine:init", () => {
                         hour: "2-digit",
                         minute: "2-digit",
                     }),
-                    cashier: transaction.user.name,
-                    paymentMethod: transaction.payment_method,
-                    amountReceived: transaction.amount_received,
-                    change: transaction.change,
+                    cashier: transaction.user.nama,
+                    paymentMethod: transaction.metode_pembayaran,
+                    amountReceived: transaction.jumlah_dibayar,
+                    change: transaction.kembalian,
                     items: (transaction.items || []).map((item) => ({
-                        name: item.product_name,
-                        qty: item.qty,
-                        finalPrice: item.price,
+                        name: item.nama_produk,
+                        qty: item.jumlah,
+                        finalPrice: item.harga_jual,
                     })),
-                    paymentType: transaction.payment_type,
-                    subtotal: transaction.subtotal,
-                    total: transaction.total,
+                    paymentType:
+                        transaction.jenis_transaksi === "grosir"
+                            ? "wholesale"
+                            : "retail",
+                    subtotal: transaction.total_belanja,
+                    total: transaction.total_transaksi,
                 };
 
                 this.receiptData = newReceipt;
@@ -503,7 +680,12 @@ document.addEventListener("alpine:init", () => {
 
             lines.push("");
             lines.push(this.centerText("PAM TECHNO", WIDTH));
-            lines.push(this.centerText("Jl. M. Yunus No. 6, Lubuk Lintah, Kec. Kuranji, Kota Padang", WIDTH));
+            lines.push(
+                this.centerText(
+                    "Jl. M. Yunus No. 6, Lubuk Lintah, Kec. Kuranji, Kota Padang",
+                    WIDTH,
+                ),
+            );
             lines.push(this.centerText("Telp: 0895600077007", WIDTH));
             lines.push(SEPARATOR);
             lines.push("");
@@ -590,14 +772,16 @@ document.addEventListener("alpine:init", () => {
             const receiptText = lines.join("\n");
 
             // Create Blob and download as .txt
-            const blob = new Blob([receiptText], { type: "text/plain;charset=utf-8" });
+            const blob = new Blob([receiptText], {
+                type: "text/plain;charset=utf-8",
+            });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
             a.download = `struk-${receipt.transactionNumber}.txt`;
             document.body.appendChild(a);
             a.click();
-            
+
             // Cleanup
             setTimeout(() => {
                 window.URL.revokeObjectURL(url);

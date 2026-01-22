@@ -16,11 +16,11 @@ class ProductTagSeeder extends Seeder
     public function run()
     {
         // Clear existing product-tag relationships
-        DB::table('product_tag')->truncate();
+        DB::table('produk_tag')->truncate();
 
         // Get all products and tags
         $products = Product::all();
-        $tags = Tag::all()->keyBy('name');
+        $tags = Tag::all()->keyBy('nama_tag');
 
         // Tag mapping based on product name patterns
         $tagMappings = [
@@ -77,7 +77,7 @@ class ProductTagSeeder extends Seeder
         ];
 
         foreach ($products as $product) {
-            $productName = $product->name;
+            $productName = $product->nama_produk;
             $assignedTags = [];
 
             // Find matching tags based on product name
@@ -117,7 +117,7 @@ class ProductTagSeeder extends Seeder
             $assignedTags = array_filter($assignedTags);
             if (!empty($assignedTags)) {
                 $product->tags()->sync($assignedTags);
-                $this->command->info("✓ {$product->name} tagged with " . count($assignedTags) . " tags");
+                $this->command->info("✓ {$product->nama_produk} tagged with " . count($assignedTags) . " tags");
             }
         }
 

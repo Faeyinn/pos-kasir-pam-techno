@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Tag;
@@ -17,12 +16,34 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
+    private function getPaymentMethod(Request $request): ?string
+    {
+        $method = $request->input('payment_method');
+        if (is_string($method) && $method !== '') {
+            return $method;
+        }
+
+        $legacy = $request->input('payment_type');
+        if (is_string($legacy) && $legacy !== '') {
+            return $legacy;
+        }
+
+        return null;
+    }
     /**
      * Display reports page
      */
     public function index(): View
     {
-        $tags = Tag::all();
+        $tags = Tag::orderBy('nama_tag')
+            ->get()
+            ->map(fn (Tag $t) => [
+                'id' => $t->id_tag,
+                'name' => $t->nama_tag,
+                'slug' => $t->slug,
+                'color' => $t->color,
+            ])
+            ->values();
         
         return view('pages.admin.reports', compact('tags'));
     }
@@ -34,35 +55,39 @@ class ReportController extends Controller
     {
         try {
             $dates = $this->getDateRange($request);
+            $paymentMethod = $this->getPaymentMethod($request);
             
             // Base transaction query with filters
             $transactionQuery = Transaction::query()
                 ->whereBetween('created_at', $dates);
             
-            if ($request->payment_type && $request->payment_type !== 'all') {
-                $transactionQuery->where('payment_type', $request->payment_type);
+            if ($paymentMethod && $paymentMethod !== 'all') {
+                $transactionQuery->where('metode_pembayaran', $paymentMethod);
             }
 
             // Get basic stats
-            $totalSales = (int) $transactionQuery->sum('total');
+            $totalSales = (int) $transactionQuery->sum('total_transaksi');
             $totalTransactions = $transactionQuery->count();
             $avgTransaction = $totalTransactions > 0 ? (int) ($totalSales / $totalTransactions) : 0;
 
             // Calculate profit from transaction items
-            $profitQuery = TransactionItem::selectRaw('SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as total_profit')
-                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-                ->join('products', 'transaction_items.product_id', '=', 'products.id')
-                ->whereBetween('transactions.created_at', $dates);
+            $profitQuery = TransactionItem::selectRaw('SUM((detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah) as total_profit')
+                ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+                ->whereBetween('transaksi.created_at', $dates);
 
-            if ($request->payment_type && $request->payment_type !== 'all') {
-                $profitQuery->where('transactions.payment_type', $request->payment_type);
+            if ($paymentMethod && $paymentMethod !== 'all') {
+                $profitQuery->where('transaksi.metode_pembayaran', $paymentMethod);
             }
 
             // Tag filter for profit
             if ($request->tags) {
                 $tagIds = is_array($request->tags) ? $request->tags : explode(',', $request->tags);
-                $profitQuery->join('product_tag', 'products.id', '=', 'product_tag.product_id')
-                    ->whereIn('product_tag.tag_id', $tagIds);
+                $profitQuery->whereExists(function ($q) use ($tagIds) {
+                    $q->select(DB::raw(1))
+                        ->from('produk_tag')
+                        ->whereColumn('produk_tag.id_produk', 'detail_transaksi.id_produk')
+                        ->whereIn('produk_tag.id_tag', $tagIds);
+                });
             }
 
             $totalProfit = (int) ($profitQuery->value('total_profit') ?? 0);
@@ -99,48 +124,50 @@ class ReportController extends Controller
     {
         try {
             $dates = $this->getDateRange($request);
+            $paymentMethod = $this->getPaymentMethod($request);
 
             // 1. Sales vs Profit Trend
             $trendQuery = TransactionItem::selectRaw('
-                    DATE(transactions.created_at) as date,
-                    SUM(transaction_items.subtotal) as sales,
-                    SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as profit
+                    DATE(transaksi.created_at) as date,
+                    SUM(detail_transaksi.subtotal) as sales,
+                    SUM((detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah) as profit
                 ')
-                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-                ->join('products', 'transaction_items.product_id', '=', 'products.id')
-                ->whereBetween('transactions.created_at', $dates)
-                ->groupBy(DB::raw('DATE(transactions.created_at)'))
+                ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+                ->whereBetween('transaksi.created_at', $dates)
+                ->groupBy(DB::raw('DATE(transaksi.created_at)'))
                 ->orderBy('date');
 
-            if ($request->payment_type && $request->payment_type !== 'all') {
-                $trendQuery->where('transactions.payment_type', $request->payment_type);
+            if ($paymentMethod && $paymentMethod !== 'all') {
+                $trendQuery->where('transaksi.metode_pembayaran', $paymentMethod);
             }
 
             if ($request->tags) {
                 $tagIds = is_array($request->tags) ? $request->tags : explode(',', $request->tags);
-                $trendQuery->join('product_tag', 'products.id', '=', 'product_tag.product_id')
-                    ->whereIn('product_tag.tag_id', $tagIds)
-                    ->distinct();
+                $trendQuery->whereExists(function ($q) use ($tagIds) {
+                    $q->select(DB::raw(1))
+                        ->from('produk_tag')
+                        ->whereColumn('produk_tag.id_produk', 'detail_transaksi.id_produk')
+                        ->whereIn('produk_tag.id_tag', $tagIds);
+                });
             }
 
             $trendData = $trendQuery->get();
 
             // 2. Profit by Tag
             $tagProfitQuery = TransactionItem::selectRaw('
-                    tags.name as tag_name,
-                    SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as profit
+                    tag.nama_tag as tag_name,
+                    SUM((detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah) as profit
                 ')
-                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-                ->join('products', 'transaction_items.product_id', '=', 'products.id')
-                ->join('product_tag', 'products.id', '=', 'product_tag.product_id')
-                ->join('tags', 'product_tag.tag_id', '=', 'tags.id')
-                ->whereBetween('transactions.created_at', $dates)
-                ->groupBy('tags.id', 'tags.name')
+                ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+                ->join('produk_tag', 'detail_transaksi.id_produk', '=', 'produk_tag.id_produk')
+                ->join('tag', 'produk_tag.id_tag', '=', 'tag.id_tag')
+                ->whereBetween('transaksi.created_at', $dates)
+                ->groupBy('tag.id_tag', 'tag.nama_tag')
                 ->orderByDesc('profit')
                 ->limit(10);
 
-            if ($request->payment_type && $request->payment_type !== 'all') {
-                $tagProfitQuery->where('transactions.payment_type', $request->payment_type);
+            if ($paymentMethod && $paymentMethod !== 'all') {
+                $tagProfitQuery->where('transaksi.metode_pembayaran', $paymentMethod);
             }
 
             $tagProfitData = $tagProfitQuery->get();
@@ -149,8 +176,8 @@ class ReportController extends Controller
             $trxTrendQuery = Transaction::selectRaw('DATE(created_at) as date, COUNT(*) as count')
                 ->whereBetween('created_at', $dates);
 
-            if ($request->payment_type && $request->payment_type !== 'all') {
-                $trxTrendQuery->where('payment_type', $request->payment_type);
+            if ($paymentMethod && $paymentMethod !== 'all') {
+                $trxTrendQuery->where('metode_pembayaran', $paymentMethod);
             }
 
             $trxTrend = $trxTrendQuery->groupBy(DB::raw('DATE(created_at)'))
@@ -185,40 +212,44 @@ class ReportController extends Controller
      */
     public function getDetail(Request $request): JsonResponse
     {
+        $paymentMethod = $this->getPaymentMethod($request);
         $query = TransactionItem::select(
-                'transactions.created_at',
-                'transactions.transaction_number',
-                'products.name as product_name',
-                'transaction_items.qty',
-                'transaction_items.price as selling_price',
-                'products.cost_price',
-                'transactions.payment_type'
+            'transaksi.created_at',
+            'transaksi.nomor_transaksi as transaction_number',
+            'detail_transaksi.nama_produk as product_name',
+            'detail_transaksi.jumlah as qty',
+            'detail_transaksi.harga_jual as selling_price',
+            'detail_transaksi.harga_pokok as cost_price',
+            'transaksi.metode_pembayaran as payment_method',
+            'transaksi.metode_pembayaran as payment_type'
             )
-            ->selectRaw('(transaction_items.price - products.cost_price) * transaction_items.qty as profit')
-            ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-            ->join('products', 'transaction_items.product_id', '=', 'products.id');
+            ->selectRaw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah as profit')
+            ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi');
 
         // Apply filters
         $dates = $this->getDateRange($request);
-        $query->whereBetween('transactions.created_at', $dates);
+        $query->whereBetween('transaksi.created_at', $dates);
 
-        if ($request->payment_type && $request->payment_type !== 'all') {
-            $query->where('transactions.payment_type', $request->payment_type);
+        if ($paymentMethod && $paymentMethod !== 'all') {
+            $query->where('transaksi.metode_pembayaran', $paymentMethod);
         }
 
         if ($request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('products.name', 'like', "%{$search}%")
-                  ->orWhere('transactions.transaction_number', 'like', "%{$search}%");
+                $q->where('detail_transaksi.nama_produk', 'like', "%{$search}%")
+                  ->orWhere('transaksi.nomor_transaksi', 'like', "%{$search}%");
             });
         }
 
         if ($request->tags) {
             $tagIds = explode(',', $request->tags);
-            $query->join('product_tag', 'products.id', '=', 'product_tag.product_id')
-                  ->whereIn('product_tag.tag_id', $tagIds)
-                  ->distinct();
+            $query->whereExists(function ($q) use ($tagIds) {
+                $q->select(DB::raw(1))
+                    ->from('produk_tag')
+                    ->whereColumn('produk_tag.id_produk', 'detail_transaksi.id_produk')
+                    ->whereIn('produk_tag.id_tag', $tagIds);
+            });
         }
 
         // Sorting
@@ -226,10 +257,10 @@ class ReportController extends Controller
         $sortDirection = $request->sort_direction ?? 'desc';
         
         $sortMap = [
-            'date' => 'transactions.created_at',
-            'product_name' => 'products.name',
-            'qty' => 'transaction_items.qty',
-            'price' => 'transaction_items.price',
+            'date' => 'transaksi.created_at',
+            'product_name' => 'detail_transaksi.nama_produk',
+            'qty' => 'detail_transaksi.jumlah',
+            'price' => 'detail_transaksi.harga_jual',
             'profit' => 'profit'
         ];
         
@@ -251,6 +282,7 @@ class ReportController extends Controller
         $fileName = 'laporan-penjualan-' . date('Y-m-d-His') . '.csv';
 
         $response = new StreamedResponse(function () use ($request) {
+            $paymentMethod = $this->getPaymentMethod($request);
             $handle = fopen('php://output', 'w');
             
             // Add BOM for Excel compatibility
@@ -265,38 +297,41 @@ class ReportController extends Controller
                 'Harga Jual', 
                 'Modal', 
                 'Total Laba', 
-                'Tipe'
+                'Metode Pembayaran'
             ]);
 
             $query = TransactionItem::select(
-                'transactions.created_at',
-                'transactions.transaction_number',
-                'products.name as product_name',
-                'transaction_items.qty',
-                'transaction_items.price as selling_price',
-                'products.cost_price',
-                'transactions.payment_type'
+                'transaksi.created_at',
+                'transaksi.nomor_transaksi as transaction_number',
+                'detail_transaksi.nama_produk as product_name',
+                'detail_transaksi.jumlah as qty',
+                'detail_transaksi.harga_jual as selling_price',
+                'detail_transaksi.harga_pokok as cost_price',
+                'transaksi.metode_pembayaran as payment_method',
+                'transaksi.metode_pembayaran as payment_type'
             )
-            ->selectRaw('(transaction_items.price - products.cost_price) * transaction_items.qty as profit')
-            ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-            ->join('products', 'transaction_items.product_id', '=', 'products.id');
+            ->selectRaw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah as profit')
+            ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi');
 
             // Apply filters
             $dates = $this->getDateRange($request);
-            $query->whereBetween('transactions.created_at', $dates);
+            $query->whereBetween('transaksi.created_at', $dates);
 
-            if ($request->payment_type && $request->payment_type !== 'all') {
-                $query->where('transactions.payment_type', $request->payment_type);
+            if ($paymentMethod && $paymentMethod !== 'all') {
+                $query->where('transaksi.metode_pembayaran', $paymentMethod);
             }
             
             if ($request->tags) {
                 $tagIds = explode(',', $request->tags);
-                $query->join('product_tag', 'products.id', '=', 'product_tag.product_id')
-                      ->whereIn('product_tag.tag_id', $tagIds)
-                      ->distinct();
+                $query->whereExists(function ($q) use ($tagIds) {
+                    $q->select(DB::raw(1))
+                        ->from('produk_tag')
+                        ->whereColumn('produk_tag.id_produk', 'detail_transaksi.id_produk')
+                        ->whereIn('produk_tag.id_tag', $tagIds);
+                });
             }
 
-            $query->orderBy('transactions.created_at', 'desc')->chunk(500, function ($rows) use ($handle) {
+            $query->orderBy('transaksi.created_at', 'desc')->chunk(500, function ($rows) use ($handle) {
                 foreach ($rows as $row) {
                     fputcsv($handle, [
                         $row->created_at,
@@ -306,7 +341,7 @@ class ReportController extends Controller
                         $row->selling_price,
                         $row->cost_price,
                         $row->profit,
-                        $row->payment_type,
+                        $row->payment_method ?? $row->payment_type,
                     ]);
                 }
             });

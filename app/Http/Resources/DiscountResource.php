@@ -13,15 +13,15 @@ class DiscountResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'type' => $this->type,
-            'value' => $this->value,
-            'target_type' => $this->target_type,
-            'start_date' => $this->start_date,
-            'end_date' => $this->end_date,
+            'id_diskon' => $this->id_diskon,
+            'nama_diskon' => $this->nama_diskon,
+            'tipe_diskon' => $this->tipe_diskon,
+            'nilai_diskon' => $this->nilai_diskon,
+            'target' => $this->target,
+            'tanggal_mulai' => $this->tanggal_mulai,
+            'tanggal_selesai' => $this->tanggal_selesai,
             'is_active' => $this->is_active,
-            'auto_activate' => $this->auto_activate,
+            'auto_active' => $this->auto_active,
             'is_valid' => $this->isValid(),
             'products' => ProductResource::collection($this->whenLoaded('products')),
             'tags' => TagResource::collection($this->whenLoaded('tags')),

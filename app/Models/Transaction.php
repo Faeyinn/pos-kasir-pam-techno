@@ -8,22 +8,25 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Transaction extends Model
 {
+    protected $table = 'transaksi';
+
+    protected $primaryKey = 'id_transaksi';
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array<string>
      */
     protected $fillable = [
-        'transaction_number',
-        'user_id',
-        'discount_id',
-        'discount_amount',
-        'payment_type',
-        'payment_method',
-        'subtotal',
-        'total',
-        'amount_received',
-        'change',
+        'nomor_transaksi',
+        'id_user',
+        'jenis_transaksi',
+        'metode_pembayaran',
+        'total_belanja',
+        'diskon',
+        'total_transaksi',
+        'jumlah_dibayar',
+        'kembalian',
         'created_at',
         'updated_at'
     ];
@@ -34,11 +37,11 @@ class Transaction extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'subtotal' => 'integer',
-        'total' => 'integer',
-        'amount_received' => 'integer',
-        'change' => 'integer',
-        'discount_amount' => 'integer'
+        'total_belanja' => 'integer',
+        'diskon' => 'integer',
+        'total_transaksi' => 'integer',
+        'jumlah_dibayar' => 'integer',
+        'kembalian' => 'integer'
     ];
 
     /**
@@ -46,15 +49,7 @@ class Transaction extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get the discount applied to this transaction
-     */
-    public function discount(): BelongsTo
-    {
-        return $this->belongsTo(Discount::class);
+        return $this->belongsTo(User::class, 'id_user', 'id');
     }
 
     /**
@@ -62,7 +57,7 @@ class Transaction extends Model
      */
     public function items(): HasMany
     {
-        return $this->hasMany(TransactionItem::class);
+        return $this->hasMany(TransactionItem::class, 'id_transaksi', 'id_transaksi');
     }
 
     /**
@@ -83,7 +78,7 @@ class Transaction extends Model
      */
     public function getItemsCount(): int
     {
-        return $this->items->sum('qty');
+        return $this->items->sum('jumlah');
     }
 }
 

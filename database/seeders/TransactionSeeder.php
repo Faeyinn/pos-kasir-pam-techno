@@ -3,10 +3,12 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\Product;
+use App\Models\ProdukSatuan;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
-use App\Models\Product;
 use App\Models\User;
+use App\Services\DiscountService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -14,187 +16,172 @@ class TransactionSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get all products and users
-        $products = Product::where('is_active', true)->get();
+        $products = Product::active()->with(['satuan' => fn ($q) => $q->where('is_active', true)])->get();
         $users = User::all();
 
-        if ($products->isEmpty()) {
-            $this->command->error('❌ Tidak ada produk aktif! Jalankan ProductSeeder terlebih dahulu.');
+        if ($products->isEmpty() || $users->isEmpty()) {
             return;
         }
 
-        if ($users->isEmpty()) {
-            $this->command->error('❌ Tidak ada user! Jalankan UserSeeder terlebih dahulu.');
-            return;
-        }
+        $discountService = app(DiscountService::class);
 
-        $this->command->info('🚀 Mulai generate transaksi dummy...');
-        
-        // Payment configurations
-        $paymentTypes = ['retail', 'wholesale'];
         $paymentMethods = ['tunai', 'kartu', 'qris', 'ewallet'];
-        $paymentMethodWeights = [60, 20, 15, 5]; // Tunai lebih dominan
-        
-        // Time patterns (simulate realistic transaction times)
-        $busyHours = [10, 11, 12, 13, 14, 15, 16]; // Jam ramai
+        $paymentMethodWeights = [60, 20, 15, 5];
+        $busyHours = [10, 11, 12, 13, 14, 15, 16];
 
-        $transactionCount = 0;
-        $totalProfit = 0;
-
-        // Generate transactions for last 30 days
-        for ($dayOffset = 29; $dayOffset >= 0; $dayOffset--) {
+        // Keep seed fast: last 14 days, moderate counts
+        for ($dayOffset = 13; $dayOffset >= 0; $dayOffset--) {
             $targetDate = Carbon::now()->subDays($dayOffset);
-            
-            // Skip if Sunday (toko tutup)
             if ($targetDate->isSunday()) {
                 continue;
             }
-            
-            // Determine number of transactions for this day
+
             $isWeekend = $targetDate->isSaturday();
-            $dailyTransactionCount = $isWeekend ? rand(15, 25) : rand(8, 18);
+            $dailyTransactionCount = $isWeekend ? rand(6, 10) : rand(4, 8);
+
+            // Boost for today (prioritize today's data)
+            if ($dayOffset === 0) {
+                $dailyTransactionCount = rand(15, 25);
+            }
 
             for ($i = 0; $i < $dailyTransactionCount; $i++) {
-                // Random time with bias towards busy hours
-                if (rand(1, 100) <= 70) {
-                    $hour = $busyHours[array_rand($busyHours)];
-                } else {
-                    $hour = rand(9, 20);
-                }
-                
-                $minute = rand(0, 59);
-                $createdAt = $targetDate->copy()->setTime($hour, $minute, rand(0, 59));
+                $hour = (rand(1, 100) <= 70)
+                    ? $busyHours[array_rand($busyHours)]
+                    : rand(9, 20);
 
-                // Determine payment type (90% retail, 10% wholesale)
-                $paymentType = (rand(1, 100) <= 90) ? 'retail' : 'wholesale';
-                
-                // Weighted random payment method
-                $paymentMethod = $this->weightedRandom($paymentMethods, $paymentMethodWeights);
+                $createdAt = $targetDate->copy()->setTime($hour, rand(0, 59), rand(0, 59));
 
-                // Generate unique transaction number
-                $dateKey = $createdAt->format('Ymd');
-                $existingCount = Transaction::whereDate('created_at', $createdAt->toDateString())->count();
-                $transactionNumber = 'TRX-' . $dateKey . '-' . str_pad($existingCount + 1, 4, '0', STR_PAD_LEFT);
+                $metodePembayaran = $this->weightedRandom($paymentMethods, $paymentMethodWeights);
 
-                // Select 1-4 random products for this transaction
-                $itemCount = rand(1, 4);
-                $selectedProducts = $products->random(min($itemCount, $products->count()));
+                // Select 1-4 random products
+                $selectedProducts = $products->random(min(rand(1, 4), $products->count()));
 
-                $subtotal = 0;
-                $items = [];
+                $itemsForCreate = [];
+                $cartItemsForDiscount = [];
+                $totalBelanja = 0;
+                $jenisTransaksi = 'eceran';
 
                 foreach ($selectedProducts as $product) {
-                    // Check if product has stock
-                    if ($product->stock <= 0) {
+                    /** @var Product $product */
+                    $defaultSatuan = $product->satuan->firstWhere('is_default', true)
+                        ?? $product->satuan->first();
+
+                    if (!$defaultSatuan) {
                         continue;
                     }
 
-                    // Determine quantity based on stock and payment type
-                    if ($paymentType === 'wholesale' && $product->wholesale > 0 && $product->wholesale_qty_per_unit > 0) {
-                        // Wholesale: buy in units (1-3 units)
-                        $units = rand(1, min(3, floor($product->stock / $product->wholesale_qty_per_unit)));
-                        if ($units < 1) continue;
-                        
-                        $qty = $units;
-                        $price = $product->wholesale;
-                        $actualStockDeduction = $units * $product->wholesale_qty_per_unit;
-                    } else {
-                        // Retail: buy individual items
-                        $maxQty = min($product->stock, 10);
-                        $qty = rand(1, $maxQty);
-                        $price = $product->price;
-                        $actualStockDeduction = $qty;
+                    // 20% chance choose non-default unit if exists
+                    $nonDefaultSatuan = $product->satuan->firstWhere('is_default', false);
+                    $useWholesaleUnit = $nonDefaultSatuan && rand(1, 100) <= 20;
+
+                    /** @var ProdukSatuan $satuan */
+                    $satuan = $useWholesaleUnit ? $nonDefaultSatuan : $defaultSatuan;
+
+                    $jumlah = rand(1, 5);
+                    $qtyBaseToDeduct = $jumlah * (int) $satuan->jumlah_per_satuan;
+
+                    // Skip stock check to ensure transactions are created even if low stock
+                    // if ((int) $product->stok < $qtyBaseToDeduct) {
+                    //    continue;
+                    // }
+
+                    if ((int) $satuan->jumlah_per_satuan > 1) {
+                        $jenisTransaksi = 'grosir';
                     }
 
-                    $itemSubtotal = $price * $qty;
-                    $subtotal += $itemSubtotal;
+                    $hargaJual = (int) $satuan->harga_jual;
+                    $subtotalItem = $jumlah * $hargaJual;
 
-                    $items[] = [
-                        'product' => $product,
-                        'qty' => $qty,
-                        'price' => $price,
-                        'subtotal' => $itemSubtotal,
-                        'stock_deduction' => $actualStockDeduction
+                    $totalBelanja += $subtotalItem;
+
+                    $itemsForCreate[] = [
+                        'id_produk' => $product->id_produk,
+                        'id_satuan' => $satuan->id_satuan,
+                        'nama_produk' => $product->nama_produk,
+                        'nama_satuan' => $satuan->nama_satuan,
+                        'jumlah_per_satuan' => (int) $satuan->jumlah_per_satuan,
+                        'jumlah' => $jumlah,
+                        'harga_pokok' => (int) $satuan->harga_pokok,
+                        'harga_jual' => $hargaJual,
+                        'subtotal' => $subtotalItem,
+                        'qty_base_to_deduct' => $qtyBaseToDeduct,
+                    ];
+
+                    $cartItemsForDiscount[] = [
+                        'product_id' => $product->id_produk,
+                        'qty' => $jumlah,
+                        'price' => $hargaJual,
                     ];
                 }
 
-                // Skip if no valid items
-                if (empty($items)) {
+                if (empty($itemsForCreate)) {
                     continue;
                 }
 
-                // Calculate total and change
-                $total = $subtotal;
-                
-                // For cash payment, generate realistic amount received
-                if ($paymentMethod === 'tunai') {
-                    $roundedTotal = ceil($total / 1000) * 1000; // Round up to nearest 1000
-                    $amountReceived = $roundedTotal + (rand(0, 2) * 1000); // Add 0-2k extra
-                } else {
-                    $amountReceived = $total; // Exact amount for digital payments
-                }
-                
-                $change = $amountReceived - $total;
+                $discountData = $discountService->findApplicableDiscount(collect($cartItemsForDiscount));
+                $discountAmount = (int) ($discountData['amount'] ?? 0);
+                $discountAmount = min($discountAmount, $totalBelanja);
 
-                // Create transaction
+                $totalTransaksi = $totalBelanja - $discountAmount;
+
+                // Realistic payment
+                $jumlahDibayar = $metodePembayaran === 'tunai'
+                    ? (int) (ceil($totalTransaksi / 1000) * 1000 + (rand(0, 2) * 1000))
+                    : (int) $totalTransaksi;
+
+                $kembalian = $jumlahDibayar - $totalTransaksi;
+                if ($kembalian < 0) {
+                    $jumlahDibayar = (int) $totalTransaksi;
+                    $kembalian = 0;
+                }
+
                 DB::beginTransaction();
                 try {
                     $transaction = Transaction::create([
-                        'transaction_number' => $transactionNumber,
-                        'user_id' => $users->random()->id,
-                        'payment_type' => $paymentType,
-                        'payment_method' => $paymentMethod,
-                        'subtotal' => $subtotal,
-                        'total' => $total,
-                        'amount_received' => $amountReceived,
-                        'change' => $change,
+                        'nomor_transaksi' => 'TRX-' . $createdAt->format('Ymd') . '-' . str_pad(
+                            Transaction::whereDate('created_at', $createdAt->toDateString())->count() + 1,
+                            4,
+                            '0',
+                            STR_PAD_LEFT
+                        ),
+                        'id_user' => $users->random()->id,
+                        'jenis_transaksi' => $jenisTransaksi,
+                        'metode_pembayaran' => $metodePembayaran,
+                        'total_belanja' => $totalBelanja,
+                        'diskon' => $discountAmount,
+                        'total_transaksi' => $totalTransaksi,
+                        'jumlah_dibayar' => $jumlahDibayar,
+                        'kembalian' => $kembalian,
                         'created_at' => $createdAt,
-                        'updated_at' => $createdAt
+                        'updated_at' => $createdAt,
                     ]);
 
-                    // Create transaction items
-                    foreach ($items as $item) {
+                    foreach ($itemsForCreate as $item) {
                         TransactionItem::create([
-                            'transaction_id' => $transaction->id,
-                            'product_id' => $item['product']->id,
-                            'product_name' => $item['product']->name,
-                            'qty' => $item['qty'],
-                            'price' => $item['price'],
+                            'id_transaksi' => $transaction->id_transaksi,
+                            'id_produk' => $item['id_produk'],
+                            'id_satuan' => $item['id_satuan'],
+                            'nama_produk' => $item['nama_produk'],
+                            'nama_satuan' => $item['nama_satuan'],
+                            'jumlah_per_satuan' => $item['jumlah_per_satuan'],
+                            'jumlah' => $item['jumlah'],
+                            'harga_pokok' => $item['harga_pokok'],
+                            'harga_jual' => $item['harga_jual'],
                             'subtotal' => $item['subtotal'],
                             'created_at' => $createdAt,
-                            'updated_at' => $createdAt
+                            'updated_at' => $createdAt,
                         ]);
 
-                        // Calculate profit for this item
-                        $itemProfit = ($item['price'] - $item['product']->cost_price) * $item['qty'];
-                        $totalProfit += $itemProfit;
-
-                        // Update product stock (DON'T actually deduct in seeder, just for simulation)
-                        // Uncomment below if you want to actually deduct stock:
-                        // $item['product']->decrement('stock', $item['stock_deduction']);
+                        // Product::where('id_produk', $item['id_produk'])->decrement('stok', $item['qty_base_to_deduct']);
                     }
 
                     DB::commit();
-                    $transactionCount++;
-
-                    if ($transactionCount % 20 == 0) {
-                        $this->command->info("✅ Generated {$transactionCount} transactions...");
-                    }
-
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     DB::rollBack();
-                    $this->command->error("❌ Error creating transaction: " . $e->getMessage());
+                    // Keep seeding resilient: skip the failed record
                 }
             }
         }
-
-        $this->command->newLine();
-        $this->command->info("🎉 Seeder selesai!");
-        $this->command->info("📊 Total transaksi: {$transactionCount}");
-        $this->command->info("💰 Total profit (estimasi): Rp " . number_format($totalProfit, 0, ',', '.'));
-        $this->command->newLine();
-        $this->command->warn("⚠️  Catatan: Stok produk TIDAK dikurangi oleh seeder ini.");
-        $this->command->warn("    Jika ingin mengurangi stok, uncomment baris di seeder.");
     }
 
     /**

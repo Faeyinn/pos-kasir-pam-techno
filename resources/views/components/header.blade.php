@@ -36,11 +36,11 @@
                     class="flex items-center gap-4 hover:bg-gray-50 p-2 -m-2 rounded-xl transition-colors"
                 >
                     <div class="text-right hidden sm:block">
-                        <div class="font-bold text-sm text-gray-900">{{ Auth::user()->name }}</div>
+                        <div class="font-bold text-sm text-gray-900">{{ Auth::user()->nama }}</div>
                         <div class="text-blue-600 text-[10px] font-bold uppercase tracking-widest">{{ Auth::user()->role === 'admin' ? 'Owner / Admin' : (Auth::user()->role === 'master' ? 'Master Access' : 'Petugas Kasir') }}</div>
                     </div>
                     <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-200 uppercase">
-                        {{ substr(Auth::user()->name, 0, 1) }}
+                        {{ substr(Auth::user()->nama, 0, 1) }}
                     </div>
                 </button>
 

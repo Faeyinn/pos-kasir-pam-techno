@@ -20,7 +20,7 @@
             class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl"
         >
             <div class="flex items-start gap-3">
-                <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"></i>
+                <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 shrink-0 mt-0.5"></i>
                 <div class="flex-1">
                     <h4 class="font-semibold text-red-900 mb-1">Terjadi Kesalahan</h4>
                     <ul class="text-sm text-red-700 space-y-1">

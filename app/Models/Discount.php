@@ -4,27 +4,30 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Discount extends Model
 {
+    protected $table = 'diskon';
+
+    protected $primaryKey = 'id_diskon';
+
     protected $fillable = [
-        'name',
-        'type',
-        'value',
-        'target_type',
-        'start_date',
-        'end_date',
+        'nama_diskon',
+        'tipe_diskon',
+        'nilai_diskon',
+        'target',
+        'tanggal_mulai',
+        'tanggal_selesai',
         'is_active',
-        'auto_activate'
+        'auto_active'
     ];
 
     protected $casts = [
-        'value' => 'integer',
-        'start_date' => 'datetime',  // Changed from 'date' to 'datetime'
-        'end_date' => 'datetime',    // Changed from 'date' to 'datetime'
+        'nilai_diskon' => 'integer',
+        'tanggal_mulai' => 'datetime',
+        'tanggal_selesai' => 'datetime',
         'is_active' => 'boolean',
-        'auto_activate' => 'boolean'
+        'auto_active' => 'boolean'
     ];
 
     /**
@@ -32,7 +35,7 @@ class Discount extends Model
      */
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class, 'discount_product');
+        return $this->belongsToMany(Product::class, 'diskon_produk', 'id_diskon', 'id_produk');
     }
 
     /**
@@ -40,15 +43,7 @@ class Discount extends Model
      */
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(Tag::class, 'discount_tag');
-    }
-
-    /**
-     * Get transactions that used this discount
-     */
-    public function transactions(): HasMany
-    {
-        return $this->hasMany(Transaction::class);
+        return $this->belongsToMany(Tag::class, 'diskon_tag', 'id_diskon', 'id_tag');
     }
 
     /**
@@ -57,11 +52,11 @@ class Discount extends Model
     public function scopeActive($query)
     {
         return $query->where(function($q) {
-            $q->where('is_active', true)
-              ->orWhere('auto_activate', true);
+                        $q->where('is_active', true)
+                            ->orWhere('auto_active', true);
         })
-        ->where('start_date', '<=', now())
-        ->where('end_date', '>=', now());
+                ->where('tanggal_mulai', '<=', now())
+                ->where('tanggal_selesai', '>=', now());
     }
 
     /**
@@ -69,13 +64,13 @@ class Discount extends Model
      */
     public function isValid(): bool
     {
-        $activeFlags = $this->is_active || $this->auto_activate;
+        $activeFlags = $this->is_active || $this->auto_active;
         if (!$activeFlags) {
             return false;
         }
 
         $now = now();
-        return $now >= $this->start_date && $now <= $this->end_date;
+        return $now >= $this->tanggal_mulai && $now <= $this->tanggal_selesai;
     }
 
     /**
@@ -85,16 +80,16 @@ class Discount extends Model
     {
         $now = now();
         
-        if ($now < $this->start_date) {
+        if ($now < $this->tanggal_mulai) {
             return 'waiting'; // Menunggu
         }
         
-        if ($now > $this->end_date) {
+        if ($now > $this->tanggal_selesai) {
             return 'expired'; // Berakhir
         }
 
         // Within date range
-        if ($this->is_active || $this->auto_activate) {
+        if ($this->is_active || $this->auto_active) {
             return 'active'; // Aktif
         }
 

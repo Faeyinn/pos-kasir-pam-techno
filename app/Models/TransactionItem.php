@@ -7,17 +7,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TransactionItem extends Model
 {
+    protected $table = 'detail_transaksi';
+
+    protected $primaryKey = 'id_detail_transaksi';
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array<string>
      */
     protected $fillable = [
-        'transaction_id',
-        'product_id',
-        'product_name',
-        'qty',
-        'price',
+        'id_transaksi',
+        'id_produk',
+        'id_satuan',
+        'nama_produk',
+        'nama_satuan',
+        'jumlah_per_satuan',
+        'jumlah',
+        'harga_pokok',
+        'harga_jual',
         'subtotal',
         'created_at',
         'updated_at'
@@ -29,8 +37,10 @@ class TransactionItem extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'qty' => 'integer',
-        'price' => 'integer',
+        'jumlah' => 'integer',
+        'jumlah_per_satuan' => 'integer',
+        'harga_pokok' => 'integer',
+        'harga_jual' => 'integer',
         'subtotal' => 'integer'
     ];
 
@@ -39,7 +49,7 @@ class TransactionItem extends Model
      */
     public function transaction(): BelongsTo
     {
-        return $this->belongsTo(Transaction::class);
+        return $this->belongsTo(Transaction::class, 'id_transaksi', 'id_transaksi');
     }
 
     /**
@@ -47,7 +57,7 @@ class TransactionItem extends Model
      */
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'id_produk', 'id_produk');
     }
 }
 

@@ -8,11 +8,18 @@
     x-data="{
         searchQuery: '',
         focusedIndex: -1,
-        allTags: availableTags,
+        allTags: window.__TAGS_DATA__ || [],
         getSelectedIds: () => [],
 
         init() {
             this.$watch('filteredTags', () => this.$nextTick(() => lucide.createIcons()));
+            
+            // Sync with global tags update
+            document.addEventListener('tags-updated', (e) => {
+                if (Array.isArray(e.detail)) {
+                    this.allTags = e.detail;
+                }
+            });
         },
 
         get filteredTags() {
@@ -20,10 +27,15 @@
             const query = this.searchQuery.toLowerCase();
             const selected = this.getSelectedIds() || [];
             
-            return this.allTags.filter(tag => 
-                tag.name.toLowerCase().includes(query) && 
-                !selected.includes(tag.id)
-            );
+            // Filter tags, ensure valid ID, and remove duplicates
+            const seenIds = new Set();
+            return (this.allTags || [])
+                .filter(tag => {
+                    if (!tag || tag.id == null) return false;
+                    if (seenIds.has(tag.id)) return false;
+                    seenIds.add(tag.id);
+                    return tag.name.toLowerCase().includes(query) && !selected.includes(tag.id);
+                });
         },
 
         selectTag(tagId) {
@@ -129,9 +141,9 @@
         <template x-for="tagId in {{ $modelName }}" :key="tagId">
             <span 
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 active:scale-95 cursor-default"
-                :style="`background-color: ${availableTags.find(t => t.id === tagId)?.color}`"
+                :style="`background-color: ${allTags.find(t => t.id === tagId)?.color}`"
             >
-                <span x-text="availableTags.find(t => t.id === tagId)?.name"></span>
+                <span x-text="allTags.find(t => t.id === tagId)?.name"></span>
                 <button 
                     type="button"
                     x-on:click="$dispatch('toggle-tag', { path: '{{ $modelName }}', id: tagId })"

@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tags', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique();
+        Schema::create('tag', function (Blueprint $table) {
+            $table->id('id_tag');
+            $table->string('nama_tag')->unique();
             $table->string('slug')->unique();
             $table->string('color', 7)->default('#6366f1'); // Hex color code
             $table->timestamps();
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('tags');
+        Schema::dropIfExists('tag');
     }
 };

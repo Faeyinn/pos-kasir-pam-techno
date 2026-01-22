@@ -164,7 +164,7 @@
     function tagManagerData() {
         return {
             view: 'list', // list, form
-            tags: window.__TAGS_DATA__ || [],
+            tags: [],
             search: '',
             loading: false,
             errorMessage: '',
@@ -179,15 +179,39 @@
             ],
 
             init() {
+                // Initialize from window data if available
+                if (Array.isArray(window.__TAGS_DATA__) && window.__TAGS_DATA__.length > 0) {
+                    this.tags = window.__TAGS_DATA__;
+                }
+                
                 // Watch for changes and re-render icons
                 this.$watch('view', () => this.$nextTick(() => lucide.createIcons()));
                 this.$watch('tags', () => this.$nextTick(() => lucide.createIcons()));
+                
+                // Listen for tags updates from productManager
+                document.addEventListener('tags-updated', (e) => {
+                    if (Array.isArray(e.detail)) {
+                        this.tags = e.detail;
+                    }
+                });
             },
 
             get filteredTags() {
-                if (!this.search) return this.tags;
+                // Ensure we have an array to work with
+                const tagsArray = Array.isArray(this.tags) ? this.tags : [];
+                
+                // Ensure valid IDs and remove duplicates
+                const seenIds = new Set();
+                const validTags = tagsArray.filter(t => {
+                    if (!t || t.id === undefined || t.id === null) return false;
+                    if (seenIds.has(t.id)) return false;
+                    seenIds.add(t.id);
+                    return true;
+                });
+                
+                if (!this.search) return validTags;
                 const q = this.search.toLowerCase();
-                return this.tags.filter(t => t.name.toLowerCase().includes(q));
+                return validTags.filter(t => t.name && t.name.toLowerCase().includes(q));
             },
 
             get modalTitle() {
@@ -199,15 +223,17 @@
                 try {
                     const res = await fetch('/api/admin/tags');
                     const json = await res.json();
-                    if (json.success) {
+                    if (json.success && Array.isArray(json.data)) {
                         this.tags = json.data;
                         // Sync window data
                         window.__TAGS_DATA__ = this.tags;
                         // Tell main productManager to update its availableTags
                         this.$dispatch('tags-updated', this.tags);
                     }
+                    // If not successful, keep existing tags
                 } catch (e) {
                     console.error('Failed to fetch tags', e);
+                    // Keep existing tags on error
                 }
             },
 

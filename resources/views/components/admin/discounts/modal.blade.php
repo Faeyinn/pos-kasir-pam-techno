@@ -142,16 +142,16 @@
                         @foreach($products as $product)
                         <label 
                             class="flex items-center space-x-2 py-2 hover:bg-slate-50 px-2 rounded cursor-pointer"
-                            x-show="'{{ strtolower($product->name) }}'.includes(productSearch.toLowerCase())"
+                            x-show="'{{ strtolower((string) data_get($product, 'name')) }}'.includes(productSearch.toLowerCase())"
                         >
                             <input 
                                 type="checkbox" 
-                                :value="{{ $product->id }}" 
+                                :value="{{ (int) data_get($product, 'id') }}" 
                                 x-model="formData.target_ids"
                                 class="rounded text-indigo-600 focus:ring-indigo-500"
                             >
-                            <span class="text-sm text-slate-700">{{ $product->name }}</span>
-                            <span class="text-xs text-slate-400">(Rp {{ number_format($product->price, 0, ',', '.') }})</span>
+                            <span class="text-sm text-slate-700">{{ data_get($product, 'name') }}</span>
+                            <span class="text-xs text-slate-400">(Rp {{ number_format((int) data_get($product, 'price', 0), 0, ',', '.') }})</span>
                         </label>
                         @endforeach
                     </div>
@@ -194,15 +194,15 @@
                         @foreach($tags as $tag)
                         <label 
                             class="flex items-center space-x-2 py-2 hover:bg-slate-50 px-2 rounded cursor-pointer"
-                            x-show="'{{ strtolower($tag->name) }}'.includes(tagSearch.toLowerCase())"
+                            x-show="'{{ strtolower((string) data_get($tag, 'name')) }}'.includes(tagSearch.toLowerCase())"
                         >
                             <input 
                                 type="checkbox" 
-                                :value="{{ $tag->id }}" 
+                                :value="{{ (int) data_get($tag, 'id') }}" 
                                 x-model="formData.target_ids"
                                 class="rounded text-indigo-600 focus:ring-indigo-500"
                             >
-                            <span class="text-sm text-slate-700">{{ $tag->name }}</span>
+                            <span class="text-sm text-slate-700">{{ data_get($tag, 'name') }}</span>
                         </label>
                         @endforeach
                     </div>

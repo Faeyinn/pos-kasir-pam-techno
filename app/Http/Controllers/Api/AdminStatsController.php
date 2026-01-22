@@ -21,19 +21,18 @@ class AdminStatsController extends Controller
         $endOfToday = Carbon::today()->endOfDay();
 
         // Total sales TODAY
-        $salesToday = Transaction::whereBetween('created_at', [$startOfToday, $endOfToday])->sum('total');
+        $salesToday = Transaction::whereBetween('created_at', [$startOfToday, $endOfToday])->sum('total_transaksi');
 
         // Calculate real profit TODAY
-        $profitToday = TransactionItem::join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-            ->join('products', 'transaction_items.product_id', '=', 'products.id')
-            ->whereBetween('transactions.created_at', [$startOfToday, $endOfToday])
-            ->sum(DB::raw('(transaction_items.price - products.cost_price) * transaction_items.qty'));
+        $profitToday = TransactionItem::join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+            ->whereBetween('transaksi.created_at', [$startOfToday, $endOfToday])
+            ->sum(DB::raw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah'));
 
         // Total transactions TODAY
         $transactionsToday = Transaction::whereBetween('created_at', [$startOfToday, $endOfToday])->count();
 
         // Low stock products (stock < 20)
-        $lowStockCount = Product::where('stock', '<', 20)
+        $lowStockCount = Product::where('stok', '<', 20)
             ->where('is_active', true)
             ->count();
 
@@ -57,13 +56,12 @@ class AdminStatsController extends Controller
         $data = [];
         
         // Group by hour for today
-        $hourlyStats = TransactionItem::join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-            ->join('products', 'transaction_items.product_id', '=', 'products.id')
-            ->whereDate('transactions.created_at', Carbon::today())
+        $hourlyStats = TransactionItem::join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+            ->whereDate('transaksi.created_at', Carbon::today())
             ->select(
-                DB::raw('HOUR(transactions.created_at) as hour'),
-                DB::raw('SUM(transaction_items.qty * transaction_items.price) as sales'),
-                DB::raw('SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as profit')
+                DB::raw('HOUR(transaksi.created_at) as hour'),
+                DB::raw('SUM(detail_transaksi.subtotal) as sales'),
+                DB::raw('SUM((detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah) as profit')
             )
             ->groupBy('hour')
             ->get()
@@ -93,14 +91,14 @@ class AdminStatsController extends Controller
     public function categorySales()
     {
         try {
-            $categorySales = DB::table('transaction_items')
-                ->join('products', 'transaction_items.product_id', '=', 'products.id')
-                ->join('product_tag', 'products.id', '=', 'product_tag.product_id')
-                ->join('tags', 'product_tag.tag_id', '=', 'tags.id')
-                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-                ->whereDate('transactions.created_at', Carbon::today())
-                ->select('tags.name as category', DB::raw('SUM(transaction_items.subtotal) as total_sales'))
-                ->groupBy('tags.id', 'tags.name')
+            $categorySales = DB::table('detail_transaksi')
+                ->join('produk', 'detail_transaksi.id_produk', '=', 'produk.id_produk')
+                ->join('produk_tag', 'produk.id_produk', '=', 'produk_tag.id_produk')
+                ->join('tag', 'produk_tag.id_tag', '=', 'tag.id_tag')
+                ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+                ->whereDate('transaksi.created_at', Carbon::today())
+                ->select('tag.nama_tag as category', DB::raw('SUM(detail_transaksi.subtotal) as total_sales'))
+                ->groupBy('tag.id_tag', 'tag.nama_tag')
                 ->orderByDesc('total_sales')
                 ->limit(6)
                 ->get();
@@ -160,28 +158,28 @@ class AdminStatsController extends Controller
         $period = $request->input('period', 'monthly');
         
         $query = TransactionItem::select(
-                'products.name as product_name',
-                DB::raw('SUM(transaction_items.qty) as total_qty'),
-                DB::raw('SUM(transaction_items.subtotal) as total_sales')
+                'produk.nama_produk as product_name',
+                DB::raw('SUM(detail_transaksi.jumlah) as total_qty'),
+                DB::raw('SUM(detail_transaksi.subtotal) as total_sales')
             )
-            ->join('products', 'transaction_items.product_id', '=', 'products.id')
-            ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id');
+            ->join('produk', 'detail_transaksi.id_produk', '=', 'produk.id_produk')
+            ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi');
 
         switch ($period) {
             case 'weekly':
-                $query->where('transactions.created_at', '>=', Carbon::now()->subWeek());
+                $query->where('transaksi.created_at', '>=', Carbon::now()->subWeek());
                 break;
             case 'monthly':
-                $query->where('transactions.created_at', '>=', Carbon::now()->subMonth());
+                $query->where('transaksi.created_at', '>=', Carbon::now()->subMonth());
                 break;
             case 'daily':
             default:
-                $query->whereDate('transactions.created_at', Carbon::today());
+                $query->whereDate('transaksi.created_at', Carbon::today());
                 break;
         }
 
         $topProducts = $query
-            ->groupBy('products.id', 'products.name')
+            ->groupBy('produk.id_produk', 'produk.nama_produk')
             ->orderByDesc('total_qty') // Changed from total_sales
             ->limit(10)
             ->get();
@@ -209,18 +207,18 @@ class AdminStatsController extends Controller
      */
     public function recentTransactions()
     {
-        $transactions = Transaction::with(['user:id,name'])
+        $transactions = Transaction::with(['user:id,nama'])
             ->orderByDesc('created_at')
             ->limit(5)
             ->get()
             ->map(function ($t) {
                 return [
-                    'id' => $t->id,
-                    'transaction_number' => $t->transaction_number,
-                    'total' => (int) $t->total,
-                    'cashier' => $t->user->name ?? 'System',
+                    'id' => $t->id_transaksi,
+                    'transaction_number' => $t->nomor_transaksi,
+                    'total' => (int) $t->total_transaksi,
+                    'cashier' => $t->user->nama ?? 'System',
                     'time' => $t->created_at->diffForHumans(),
-                    'payment_method' => $t->payment_method,
+                    'payment_method' => $t->metode_pembayaran,
                     'status' => 'Selesai'
                 ];
             });

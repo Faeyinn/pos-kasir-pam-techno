@@ -11,19 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('discount_product', function (Blueprint $table) {
+        Schema::create('diskon_produk', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('discount_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('id_diskon')->constrained('diskon', 'id_diskon')->cascadeOnDelete();
+            $table->foreignId('id_produk')->constrained('produk', 'id_produk')->cascadeOnDelete();
             $table->timestamps();
             
             // Composite unique key to prevent duplicates
-            $table->unique(['discount_id', 'product_id']);
+            $table->unique(['id_diskon', 'id_produk']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('discount_product');
+        Schema::dropIfExists('diskon_produk');
     }
 };

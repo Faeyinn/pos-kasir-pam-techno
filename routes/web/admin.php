@@ -48,6 +48,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/products/{id}', [ProductController::class, 'show'])->name('api.admin.products.show');
         Route::put('/products/{id}', [ProductController::class, 'update'])->name('api.admin.products.update');
         Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('api.admin.products.destroy');
+
+        // Discounts List
+        Route::get('/discounts', [DiscountController::class, 'index'])->name('api.admin.discounts.index');
         
         // Discounts CRUD
         Route::post('/discounts', [DiscountController::class, 'store'])->name('api.admin.discounts.store');

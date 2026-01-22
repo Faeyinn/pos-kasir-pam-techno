@@ -12,33 +12,33 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('discounts', function (Blueprint $table) {
-            $table->id();
+        Schema::create('diskon', function (Blueprint $table) {
+            $table->id('id_diskon');
             
             // Discount info
-            $table->string('name');
-            $table->enum('type', ['percentage', 'fixed'])->comment('percentage = %, fixed = nominal Rp');
-            $table->integer('value')->comment('Value of discount (10 for 10%, or 10000 for Rp 10.000)');
-            $table->enum('target_type', ['product', 'tag'])->comment('Discount applies to product or tag');
+            $table->string('nama_diskon');
+            $table->enum('tipe_diskon', ['persen', 'nominal']);
+            $table->unsignedInteger('nilai_diskon');
+            $table->enum('target', ['produk', 'tag']);
             
             // Validity period (datetime for precise scheduling)
-            $table->dateTime('start_date');
-            $table->dateTime('end_date');
+            $table->dateTime('tanggal_mulai');
+            $table->dateTime('tanggal_selesai');
             
             // Status
             $table->boolean('is_active')->default(true);
-            $table->boolean('auto_activate')->default(true)->comment('Auto-activate based on schedule');
+            $table->boolean('auto_active')->default(true);
             
             $table->timestamps();
             
             // Indexes for common queries
             $table->index('is_active');
-            $table->index(['start_date', 'end_date']);
+            $table->index(['tanggal_mulai', 'tanggal_selesai']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('discounts');
+        Schema::dropIfExists('diskon');
     }
 };

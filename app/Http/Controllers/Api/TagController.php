@@ -13,7 +13,7 @@ class TagController extends Controller
      */
     public function index(): JsonResponse
     {
-        $tags = Tag::orderBy('name')->get();
+        $tags = Tag::orderBy('nama_tag')->get();
         
         return response()->json([
             'success' => true,
@@ -25,10 +25,16 @@ class TagController extends Controller
      */
     public function store(\Illuminate\Http\Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:tags,name',
+        // Accept both 'name' (from JS) and 'nama_tag' (legacy)
+        $data = $request->all();
+        if (isset($data['name'])) {
+            $data['nama_tag'] = $data['name'];
+        }
+        
+        $validated = validator($data, [
+            'nama_tag' => 'required|string|max:50|unique:tag,nama_tag',
             'color' => 'required|string|max:7'
-        ]);
+        ])->validate();
 
         $tag = Tag::create($validated);
 
@@ -46,10 +52,16 @@ class TagController extends Controller
     {
         $tag = Tag::findOrFail($id);
         
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:tags,name,' . $id,
+        // Accept both 'name' (from JS) and 'nama_tag' (legacy)
+        $data = $request->all();
+        if (isset($data['name'])) {
+            $data['nama_tag'] = $data['name'];
+        }
+        
+        $validated = validator($data, [
+            'nama_tag' => 'required|string|max:50|unique:tag,nama_tag,' . $id . ',id_tag',
             'color' => 'required|string|max:7'
-        ]);
+        ])->validate();
 
         $tag->update($validated);
 

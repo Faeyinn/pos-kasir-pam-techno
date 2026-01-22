@@ -9,20 +9,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
+    protected $table = 'produk';
+
+    protected $primaryKey = 'id_produk';
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array<string>
      */
     protected $fillable = [
-        'name',
-        'image',
-        'price',
-        'cost_price',
-        'wholesale',
-        'wholesale_unit',
-        'wholesale_qty_per_unit',
-        'stock',
+        'nama_produk',
+        'gambar',
+        'stok',
         'is_active'
     ];
 
@@ -33,11 +32,7 @@ class Product extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
-        'price' => 'integer',
-        'cost_price' => 'integer',
-        'wholesale' => 'integer',
-        'stock' => 'integer',
-        'wholesale_qty_per_unit' => 'integer'
+        'stok' => 'integer'
     ];
 
     /**
@@ -45,7 +40,7 @@ class Product extends Model
      */
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(Tag::class);
+        return $this->belongsToMany(Tag::class, 'produk_tag', 'id_produk', 'id_tag');
     }
 
     /**
@@ -53,7 +48,7 @@ class Product extends Model
      */
     public function discounts(): BelongsToMany
     {
-        return $this->belongsToMany(Discount::class, 'discount_product');
+        return $this->belongsToMany(Discount::class, 'diskon_produk', 'id_produk', 'id_diskon');
     }
 
     /**
@@ -61,7 +56,12 @@ class Product extends Model
      */
     public function transactionItems(): HasMany
     {
-        return $this->hasMany(TransactionItem::class);
+        return $this->hasMany(TransactionItem::class, 'id_produk', 'id_produk');
+    }
+
+    public function satuan(): HasMany
+    {
+        return $this->hasMany(ProdukSatuan::class, 'id_produk', 'id_produk');
     }
 
     /**
@@ -77,7 +77,7 @@ class Product extends Model
      */
     public function hasLowStock(int $threshold = 20): bool
     {
-        return $this->stock < $threshold;
+        return $this->stok < $threshold;
     }
 
     /**
@@ -85,7 +85,12 @@ class Product extends Model
      */
     public function getProfitMargin(): int
     {
-        return $this->price - $this->cost_price;
+        $defaultSatuan = $this->satuan()->where('is_default', true)->first();
+        if (!$defaultSatuan) {
+            return 0;
+        }
+
+        return (int) ($defaultSatuan->harga_jual - $defaultSatuan->harga_pokok);
     }
 }
 

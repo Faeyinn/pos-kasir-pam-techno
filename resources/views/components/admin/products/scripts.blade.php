@@ -1,6 +1,15 @@
 <script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('productManager', () => ({
+(function registerProductManager() {
+    const register = () => {
+        if (!window.Alpine) return;
+
+        // Register Alpine component (optional). The page can also use x-data="productManager()".
+        window.Alpine.data('productManager', window.productManager);
+    };
+
+    // Global factory so x-data can call it directly.
+    // This avoids race conditions around Alpine.data registration.
+    window.productManager = window.productManager || (() => ({
         products: window.__PRODUCTS_DATA__ || [],
         availableTags: window.__TAGS_DATA__ || [],
         search: '',
@@ -8,18 +17,83 @@ document.addEventListener('alpine:init', () => {
         currentPage: 1,
         perPage: 10,
 
-        init() {
+        apiFetch(url, options = {}) {
+            return fetch(url, {
+                cache: 'no-store',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.headers || {}),
+                },
+                ...options,
+            });
+        },
+
+        async reloadProducts() {
+            try {
+                const response = await this.apiFetch('/api/admin/products');
+                const data = await response.json();
+                if (data.success) {
+                    this.products = data.data || [];
+                    this.availableTags = data.tags || this.availableTags;
+                    if (this.currentPage > this.totalPages) this.currentPage = this.totalPages || 1;
+                    this.$nextTick(() => lucide.createIcons());
+                }
+            } catch (e) {
+                // ignore; keep existing in-memory state
+            }
+        },
+
+        async init() {
             this.$nextTick(() => lucide.createIcons());
             document.addEventListener('tags-updated', (e) => {
                 this.availableTags = e.detail;
             });
+
+            // Watch for changes that affect displayed products and refresh icons
+            this.$watch('search', () => {
+                this.currentPage = 1;
+                this.$nextTick(() => lucide.createIcons());
+            });
+
+            // Ensure the list is always fresh (avoid stale Blade-injected data)
+            await this.reloadProducts();
+        },
+
+        // Indonesian-first getters (backward-compatible with legacy keys)
+        getProductName(product) {
+            return product?.nama_produk ?? product?.name ?? '';
+        },
+
+        getRetailPrice(product) {
+            return Number(product?.harga_jual ?? product?.price ?? 0);
+        },
+
+        getCostPrice(product) {
+            return Number(product?.harga_pokok ?? product?.cost_price ?? 0);
+        },
+
+        getWholesalePrice(product) {
+            return Number(product?.harga_jual_grosir ?? product?.wholesale ?? 0);
+        },
+
+        getWholesaleUnit(product) {
+            return product?.nama_satuan_grosir ?? product?.wholesale_unit ?? '';
+        },
+
+        getWholesaleQtyPerUnit(product) {
+            return Number(product?.jumlah_per_satuan_grosir ?? product?.wholesale_qty_per_unit ?? 1);
+        },
+
+        getStock(product) {
+            return Number(product?.stok ?? product?.stock ?? 0);
         },
         
         get filteredProducts() {
             if (!this.search) return this.products;
             const q = this.search.toLowerCase();
             return this.products.filter(p => 
-                p.name.toLowerCase().includes(q) ||
+                this.getProductName(p).toLowerCase().includes(q) ||
                 (p.tags && p.tags.some(t => t.name.toLowerCase().includes(q)))
             );
         },
@@ -36,15 +110,24 @@ document.addEventListener('alpine:init', () => {
         },
 
         nextPage() {
-            if (this.currentPage < this.totalPages) this.currentPage++;
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.$nextTick(() => lucide.createIcons());
+            }
         },
 
         prevPage() {
-            if (this.currentPage > 1) this.currentPage--;
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.$nextTick(() => lucide.createIcons());
+            }
         },
 
         goToPage(page) {
-            if (page >= 1 && page <= this.totalPages) this.currentPage = page;
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+                this.$nextTick(() => lucide.createIcons());
+            }
         },
 
         getActiveDiscount(product) {
@@ -54,12 +137,13 @@ document.addEventListener('alpine:init', () => {
 
         getDiscountedPrice(product) {
             const discount = this.getActiveDiscount(product);
-            if (!discount) return product.price;
+            const retailPrice = this.getRetailPrice(product);
+            if (!discount) return retailPrice;
 
             if (discount.type === 'percentage') {
-                return product.price - (product.price * discount.value / 100);
+                return retailPrice - (retailPrice * discount.value / 100);
             } else {
-                return Math.max(0, product.price - discount.value);
+                return Math.max(0, retailPrice - discount.value);
             }
         },
 
@@ -67,10 +151,13 @@ document.addEventListener('alpine:init', () => {
             const discount = this.getActiveDiscount(product);
             if (!discount) return 0;
 
+            const retailPrice = this.getRetailPrice(product);
+
             if (discount.type === 'percentage') {
                 return discount.value;
             } else {
-                return Math.round((discount.value / product.price) * 100);
+                if (retailPrice <= 0) return 0;
+                return Math.round((discount.value / retailPrice) * 100);
             }
         },
 
@@ -126,7 +213,6 @@ document.addEventListener('alpine:init', () => {
                 wholesale_unit: '', wholesale_qty_per_unit: 1, stock: 0,
                 is_active: true, tag_ids: []
             };
-            this.addTagsInput = '';
             this.addErrors = {};
             this.$dispatch('open-product-add');
         },
@@ -136,7 +222,7 @@ document.addEventListener('alpine:init', () => {
             this.addErrors = {};
 
             try {
-                const response = await fetch('/api/admin/products', {
+                const response = await this.apiFetch('/api/admin/products', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -148,7 +234,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    this.products.push(data.data);
+                    await this.reloadProducts();
                     this.$dispatch('close-product-add');
                     this.showToast('Produk berhasil ditambahkan', 'success');
                     this.$nextTick(() => lucide.createIcons());
@@ -165,23 +251,22 @@ document.addEventListener('alpine:init', () => {
 
         async editProduct(id) {
             try {
-                const response = await fetch(`/api/admin/products/${id}`);
+                const response = await this.apiFetch(`/api/admin/products/${id}`);
                 const data = await response.json();
 
                 if (data.success) {
                     this.form = {
                         id: data.data.id,
-                        name: data.data.name,
-                        price: data.data.price,
-                        cost_price: data.data.cost_price,
-                        wholesale: data.data.wholesale || 0,
-                        wholesale_unit: data.data.wholesale_unit || '',
-                        wholesale_qty_per_unit: data.data.wholesale_qty_per_unit || 1,
-                        stock: data.data.stock,
+                        name: this.getProductName(data.data),
+                        price: this.getRetailPrice(data.data),
+                        cost_price: this.getCostPrice(data.data),
+                        wholesale: this.getWholesalePrice(data.data),
+                        wholesale_unit: this.getWholesaleUnit(data.data),
+                        wholesale_qty_per_unit: this.getWholesaleQtyPerUnit(data.data),
+                        stock: this.getStock(data.data),
                         is_active: data.data.is_active,
-                        tag_ids: (data.data.tags || []).map(t => t.id)
+                        tag_ids: (data.data.tag_ids || (data.data.tags || []).map(t => t.id) || [])
                     };
-                    this.tagsInput = (data.data.tags || []).join(', ');
                     this.errors = {};
                     this.$dispatch('open-product-edit');
                 }
@@ -195,7 +280,7 @@ document.addEventListener('alpine:init', () => {
             this.errors = {};
 
             try {
-                const response = await fetch(`/api/admin/products/${this.form.id}`, {
+                const response = await this.apiFetch(`/api/admin/products/${this.form.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -207,8 +292,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    const index = this.products.findIndex(p => p.id === this.form.id);
-                    if (index !== -1) this.products[index] = data.data;
+                    await this.reloadProducts();
 
                     this.$dispatch('close-product-edit');
                     this.showToast('Produk berhasil diperbarui', 'success');
@@ -228,7 +312,7 @@ document.addEventListener('alpine:init', () => {
             if (!confirm(`Apakah Anda yakin ingin menghapus produk "${name}"?`)) return;
 
             try {
-                const response = await fetch(`/api/admin/products/${id}`, {
+                const response = await this.apiFetch(`/api/admin/products/${id}`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
                 });
@@ -236,7 +320,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    this.products = this.products.filter(p => p.id !== id);
+                    await this.reloadProducts();
                     this.showToast('Produk berhasil dihapus', 'success');
                 } else {
                     this.showToast(data.message || 'Gagal menghapus produk', 'error');
@@ -246,41 +330,39 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        updateTags() {
-            if (this.tagsInput.trim()) {
-                this.form.tags = this.tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-            } else {
-                this.form.tags = [];
-            }
-            this.$nextTick(() => lucide.createIcons());
-        },
-
-        removeTag(index) {
-            this.form.tags.splice(index, 1);
-            this.tagsInput = this.form.tags.join(', ');
-            this.$nextTick(() => lucide.createIcons());
-        },
-
-        updateAddTags() {
-            if (this.addTagsInput.trim()) {
-                this.addForm.tags = this.addTagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-            } else {
-                this.addForm.tags = [];
-            }
-            this.$nextTick(() => lucide.createIcons());
-        },
-
-        removeAddTag(index) {
-            this.addForm.tags.splice(index, 1);
-            this.addTagsInput = this.addForm.tags.join(', ');
-            this.$nextTick(() => lucide.createIcons());
-        },
-
         showToast(message, type = 'success') {
             this.toast = { show: true, message, type };
             this.$nextTick(() => lucide.createIcons());
             setTimeout(() => { this.toast.show = false; }, 3000);
         }
     }));
-});
+
+    const ensureInitTree = () => {
+        if (!window.Alpine || typeof window.Alpine.initTree !== 'function') return;
+        document.querySelectorAll('[x-data="productManager"]').forEach((el) => {
+            // If Alpine already initialized this element, skip.
+            if (el._x_dataStack) return;
+            window.Alpine.initTree(el);
+        });
+    };
+
+    // If Alpine is already loaded/started, register immediately.
+    // Otherwise, hook into alpine:init.
+    document.addEventListener('alpine:init', () => {
+        register();
+    });
+
+    // If this script is loaded after Alpine.start(), we won't get a second alpine:init.
+    // Register immediately and re-init the tree.
+    if (window.Alpine) {
+        register();
+        ensureInitTree();
+    }
+
+    // Also attempt after Alpine finishes initializing the page.
+    document.addEventListener('alpine:initialized', () => {
+        register();
+        ensureInitTree();
+    });
+})();
 </script>

@@ -28,5 +28,15 @@ window.lucide = {
     icons,
 };
 
-Alpine.start();
-createIcons({ icons });
+// Defer Alpine.start() to allow page-specific scripts to register components first
+// This fixes "productManager is not defined" errors on the products page
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+        Alpine.start();
+        createIcons({ icons });
+    });
+} else {
+    // DOM already loaded, start immediately
+    Alpine.start();
+    createIcons({ icons });
+}

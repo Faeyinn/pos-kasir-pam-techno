@@ -12,38 +12,37 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('transactions', function (Blueprint $table) {
-            $table->id();
+        Schema::create('transaksi', function (Blueprint $table) {
+            $table->id('id_transaksi');
             
             // Transaction identifier
-            $table->string('transaction_number')->unique();
+            $table->string('nomor_transaksi')->unique();
             
             // Relationships
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('discount_id')->nullable()->constrained()->nullOnDelete();
-            $table->integer('discount_amount')->default(0);
+            $table->foreignId('id_user')->constrained('users', 'id')->restrictOnDelete();
             
             // Payment info
-            $table->enum('payment_type', ['retail', 'wholesale'])->default('retail');
-            $table->enum('payment_method', ['tunai', 'kartu', 'qris', 'ewallet'])->default('tunai');
+            $table->enum('jenis_transaksi', ['eceran', 'grosir'])->default('eceran');
+            $table->enum('metode_pembayaran', ['tunai', 'kartu', 'qris', 'ewallet'])->default('tunai');
             
             // Amounts
-            $table->integer('subtotal');
-            $table->integer('total');
-            $table->integer('amount_received');
-            $table->integer('change');
+            $table->unsignedBigInteger('total_belanja');
+            $table->unsignedBigInteger('diskon')->default(0);
+            $table->unsignedBigInteger('total_transaksi');
+            $table->unsignedBigInteger('jumlah_dibayar');
+            $table->unsignedBigInteger('kembalian');
             
             $table->timestamps();
             
             // Indexes for common queries
-            $table->index('transaction_number');
+            $table->index('nomor_transaksi');
             $table->index('created_at');
-            $table->index('user_id');
+            $table->index('id_user');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('transactions');
+        Schema::dropIfExists('transaksi');
     }
 };

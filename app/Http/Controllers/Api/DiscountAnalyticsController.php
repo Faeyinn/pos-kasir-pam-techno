@@ -26,43 +26,55 @@ class DiscountAnalyticsController extends Controller
                 ? Carbon::parse($request->end_date)
                 : Carbon::now();
 
-            // Base query for transactions with profit calculation
-            $baseQuery = DB::table('transactions')
-                ->join('transaction_items', 'transactions.id', '=', 'transaction_items.transaction_id')
-                ->join('products', 'transaction_items.product_id', '=', 'products.id')
-                ->whereBetween('transactions.created_at', [$startDate, $endDate]);
+            $trxBaseQuery = DB::table('transaksi')
+                ->whereBetween('created_at', [$startDate, $endDate]);
 
-            // Get transactions WITHOUT discount
-            $withoutDiscount = (clone $baseQuery)
-                ->whereNull('transactions.discount_id')
+            $withoutTrx = (clone $trxBaseQuery)
+                ->where('diskon', '=', 0)
                 ->selectRaw('
-                    COUNT(DISTINCT transactions.id) as transaction_count,
-                    AVG(transactions.total) as avg_transaction,
-                    SUM(transaction_items.qty * transaction_items.price) as total_revenue,
-                    SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as total_profit
+                    COUNT(*) as transaction_count,
+                    AVG(total_transaksi) as avg_transaction,
+                    SUM(total_transaksi) as total_revenue,
+                    SUM(diskon) as total_discount_given
                 ')
                 ->first();
 
-            // Get transactions WITH discount
-            $withDiscount = (clone $baseQuery)
-                ->whereNotNull('transactions.discount_id')
+            $withTrx = (clone $trxBaseQuery)
+                ->where('diskon', '>', 0)
                 ->selectRaw('
-                    COUNT(DISTINCT transactions.id) as transaction_count,
-                    AVG(transactions.total) as avg_transaction,
-                    SUM(transaction_items.qty * transaction_items.price) as total_revenue,
-                    SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as total_profit
+                    COUNT(*) as transaction_count,
+                    AVG(total_transaksi) as avg_transaction,
+                    SUM(total_transaksi) as total_revenue,
+                    SUM(diskon) as total_discount_given
                 ')
                 ->first();
 
-            // Adjust profit for "With Discount" to account for transaction-level discount
-            $totalTransactionDiscount = DB::table('transactions')
-                ->whereNotNull('discount_id')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->sum('discount_amount');
-            
-            if ($withDiscount) {
-                $withDiscount->total_profit = ($withDiscount->total_profit ?? 0) - $totalTransactionDiscount;
-            }
+            $withoutRawProfit = DB::table('detail_transaksi')
+                ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+                ->whereBetween('transaksi.created_at', [$startDate, $endDate])
+                ->where('transaksi.diskon', '=', 0)
+                ->sum(DB::raw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah'));
+
+            $withRawProfit = DB::table('detail_transaksi')
+                ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+                ->whereBetween('transaksi.created_at', [$startDate, $endDate])
+                ->where('transaksi.diskon', '>', 0)
+                ->sum(DB::raw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah'));
+
+            $withoutDiscount = (object) [
+                'transaction_count' => (int) ($withoutTrx->transaction_count ?? 0),
+                'avg_transaction' => (float) ($withoutTrx->avg_transaction ?? 0),
+                'total_revenue' => (float) ($withoutTrx->total_revenue ?? 0),
+                'total_profit' => (float) $withoutRawProfit,
+            ];
+
+            $withDiscountNetProfit = (float) $withRawProfit - (float) ($withTrx->total_discount_given ?? 0);
+            $withDiscount = (object) [
+                'transaction_count' => (int) ($withTrx->transaction_count ?? 0),
+                'avg_transaction' => (float) ($withTrx->avg_transaction ?? 0),
+                'total_revenue' => (float) ($withTrx->total_revenue ?? 0),
+                'total_profit' => (float) $withDiscountNetProfit,
+            ];
 
             // Calculate differences - Comparison is "With Discount" vs "Without Discount"
             $avgTransDiff = $withoutDiscount->avg_transaction > 0
@@ -90,46 +102,10 @@ class DiscountAnalyticsController extends Controller
                 ? round(($withDiscount->total_profit / $withDiscount->total_revenue) * 100, 1)
                 : 0;
 
-            // Get per-discount performance
-            $performance = DB::table('discounts')
-                ->join('transactions', 'discounts.id', '=', 'transactions.discount_id')
-                ->join('transaction_items', 'transactions.id', '=', 'transaction_items.transaction_id')
-                ->join('products', 'transaction_items.product_id', '=', 'products.id')
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
-                ->select(
-                    'discounts.id',
-                    'discounts.name',
-                    'discounts.type',
-                    'discounts.value',
-                    DB::raw('COUNT(DISTINCT transactions.id) as usage_count'),
-                    DB::raw('SUM(transactions.discount_amount) as total_discount_given'),
-                    DB::raw('SUM(transaction_items.qty * transaction_items.price) as total_revenue'),
-                    DB::raw('SUM((transaction_items.price - products.cost_price) * transaction_items.qty) as raw_profit')
-                )
-                ->groupBy('discounts.id', 'discounts.name', 'discounts.type', 'discounts.value')
-                ->get()
-                ->map(function ($item) {
-                    // Net profit = raw profit from items - transaction level discount
-                    $netProfit = $item->raw_profit - $item->total_discount_given;
-                    
-                    $roi = $item->total_discount_given > 0
-                        ? round(($item->total_revenue / $item->total_discount_given) * 100, 0)
-                        : 0;
-
-                    return [
-                        'id' => $item->id,
-                        'name' => $item->name,
-                        'type' => $item->type,
-                        'value' => $item->value,
-                        'usage_count' => (int) $item->usage_count,
-                        'total_discount_given' => (int) $item->total_discount_given,
-                        'total_revenue' => (int) $item->total_revenue,
-                        'total_profit' => (int) $netProfit,
-                        'roi_percentage' => $roi
-                    ];
-                })
-                ->sortByDesc('roi_percentage')
-                ->values();
+            // NOTE: In the current Indonesian schema, `transaksi` only stores the discount AMOUNT (`diskon`),
+            // not which discount record (`id_diskon`) was applied. Because of that, per-discount performance
+            // cannot be computed reliably.
+            $performance = collect([]);
 
             return response()->json([
                 'success' => true,

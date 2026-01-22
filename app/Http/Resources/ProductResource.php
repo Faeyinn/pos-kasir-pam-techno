@@ -12,19 +12,33 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $showCost = $this->shouldShowCostPrice($request);
+
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'image' => $this->image,
-            'price' => $this->price,
-            'cost_price' => $this->when($this->shouldShowCostPrice($request), $this->cost_price),
-            'wholesale' => $this->wholesale,
-            'wholesale_unit' => $this->wholesale_unit,
-            'wholesale_qty_per_unit' => $this->wholesale_qty_per_unit,
-            'stock' => $this->stock,
+            'id_produk' => $this->id_produk,
+            'nama_produk' => $this->nama_produk,
+            'gambar' => $this->gambar,
+            'stok' => $this->stok,
             'is_active' => $this->is_active,
             'tags' => TagResource::collection($this->whenLoaded('tags')),
-            'tag_ids' => $this->when($this->relationLoaded('tags'), fn() => $this->tags->pluck('id')->toArray()),
+            'tag_ids' => $this->when($this->relationLoaded('tags'), fn() => $this->tags->pluck('id_tag')->toArray()),
+            'satuan' => $this->whenLoaded('satuan', function () use ($showCost) {
+                return $this->satuan
+                    ->where('is_active', true)
+                    ->sortByDesc('is_default')
+                    ->values()
+                    ->map(function ($satuan) use ($showCost) {
+                        return [
+                            'id_satuan' => $satuan->id_satuan,
+                            'nama_satuan' => $satuan->nama_satuan,
+                            'jumlah_per_satuan' => $satuan->jumlah_per_satuan,
+                            'harga_jual' => (int) $satuan->harga_jual,
+                            'harga_pokok' => $showCost ? (int) $satuan->harga_pokok : null,
+                            'is_default' => (bool) $satuan->is_default,
+                            'is_active' => (bool) $satuan->is_active,
+                        ];
+                    });
+            }),
             'discount' => $this->when(isset($this->discount), $this->discount),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

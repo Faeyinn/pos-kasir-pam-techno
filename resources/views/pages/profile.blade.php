@@ -9,11 +9,11 @@
             <div class="relative flex flex-col items-center">
                 <div class="w-32 h-32 bg-white p-1.5 rounded-3xl shadow-lg rotate-3 hover:rotate-0 transition-transform duration-500">
                     <div class="w-full h-full bg-blue-600 rounded-2xl flex items-center justify-center text-white text-4xl font-black uppercase">
-                        {{ substr(Auth::user()->name, 0, 1) }}
+                        {{ substr(Auth::user()->nama, 0, 1) }}
                     </div>
                 </div>
                 <div class="mt-6 text-center">
-                    <h2 class="text-3xl font-black text-gray-900">{{ Auth::user()->name }}</h2>
+                    <h2 class="text-3xl font-black text-gray-900">{{ Auth::user()->nama }}</h2>
                     <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-100 rounded-full mt-3">
                         <i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i>
                         <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">{{ Auth::user()->role === 'admin' ? 'Owner / Admin' : 'Petugas Kasir' }}</span>

@@ -5,7 +5,7 @@
     <!-- Discount Badge -->
     <template x-if="product.hasDiscount">
         <div class="absolute top-0 right-0 m-3 sm:m-4 z-10">
-            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg shadow-lg font-black text-[10px] sm:text-xs flex items-center gap-1">
+            <div class="bg-linear-to-br from-red-500 to-red-600 text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg shadow-lg font-black text-[10px] sm:text-xs flex items-center gap-1">
                 <i data-lucide="tag" class="w-3 h-3"></i>
                 <span x-text="product.discount.type === 'percentage' 
                     ? `-${product.discount.value}%` 

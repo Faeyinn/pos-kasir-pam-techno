@@ -2,8 +2,15 @@
 
 @section('header', 'Laporan & Analisis Penjualan')
 
+@push('head-scripts')
+<script>
+    window.__TAGS_DATA__ = @json($tags);
+</script>
+<x-admin.reports.scripts />
+@endpush
+
 @section('content')
-<div x-data="reportManager" class="min-h-screen">
+<div x-data="reportManager" x-cloak class="min-h-screen">
     <x-admin.reports.filter />
     <x-admin.reports.export-buttons />
 
@@ -20,12 +27,8 @@
 
     <x-admin.reports.loading />
 </div>
+@endsection
 
 @push('scripts')
-<script>
-    window.__TAGS_DATA__ = @json($tags);
-</script>
-<x-admin.reports.scripts />
 <x-admin.reports.print-styles />
 @endpush
-@endsection

@@ -31,7 +31,16 @@ class UserController extends Controller
 
         $user = User::findOrFail($id);
 
-        // TODO: Add authorization check - only Master can update other Masters/Admins
+        $actor = auth()->user();
+        $actorIsMaster = $actor && $actor->role === 'master';
+
+        // Only real master can change a master user OR promote someone to master
+        if (!$actorIsMaster && ($user->role === 'master' || $request->role === 'master')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Master yang boleh mengubah role Master'
+            ], 403);
+        }
         
         $user->role = $request->role;
         $user->save();
@@ -50,10 +59,20 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
+        $actor = auth()->user();
+        $actorIsMaster = $actor && $actor->role === 'master';
+
         if ($user->id === auth()->id()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak dapat menghapus akun sendiri'
+            ], 403);
+        }
+
+        if (!$actorIsMaster && $user->role === 'master') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Master yang boleh menghapus akun Master'
             ], 403);
         }
 

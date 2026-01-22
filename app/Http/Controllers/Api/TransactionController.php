@@ -3,23 +3,25 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTransactionRequest;
+use App\Http\Resources\TransactionResource;
+use App\Models\ProdukSatuan;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Product;
 use App\Services\DiscountService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
-    public function index(Request $request)
+    public function index(\Illuminate\Http\Request $request)
     {
-        $query = Transaction::with(['user', 'items.product'])
+        $query = Transaction::with(['user', 'items'])
             ->orderBy('created_at', 'desc');
 
         // Filter by user (kasir)
         if ($request->has('user_id')) {
-            $query->where('user_id', $request->user_id);
+            $query->where('id_user', $request->user_id);
         }
 
         // Filter by date
@@ -31,86 +33,113 @@ class TransactionController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $transactions
+            'data' => TransactionResource::collection($transactions)->resolve()
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreTransactionRequest $request)
     {
-        $request->validate([
-            'payment_type' => 'required|in:retail,wholesale',
-            'payment_method' => 'required|in:tunai,kartu,qris,ewallet',
-            'amount_received' => 'required|integer|min:0',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.qty' => 'required|integer|min:1',
-            'items.*.price' => 'required|integer|min:0'
-        ]);
+        $validated = $request->validated();
 
         DB::beginTransaction();
         
         try {
-            // Calculate subtotal
-            $subtotal = 0;
-            foreach ($request->items as $item) {
-                $subtotal += $item['qty'] * $item['price'];
+            $itemsForCreate = [];
+            $cartItemsForDiscount = [];
+            $totalBelanja = 0;
+
+            foreach ($validated['items'] as $item) {
+                $produk = Product::findOrFail($item['id_produk']);
+
+                $satuan = ProdukSatuan::where('id_satuan', $item['id_satuan'])
+                    ->where('id_produk', $produk->id_produk)
+                    ->firstOrFail();
+
+                $jumlah = (int) $item['jumlah'];
+                $qtyBaseToDeduct = $jumlah * (int) $satuan->jumlah_per_satuan;
+
+                if ($produk->stok < $qtyBaseToDeduct) {
+                    throw new \Exception("Stok {$produk->nama_produk} tidak mencukupi");
+                }
+
+                $hargaJual = (int) $satuan->harga_jual;
+                $subtotalItem = $jumlah * $hargaJual;
+
+                $totalBelanja += $subtotalItem;
+
+                $itemsForCreate[] = [
+                    'id_produk' => $produk->id_produk,
+                    'id_satuan' => $satuan->id_satuan,
+                    'nama_produk' => $produk->nama_produk,
+                    'nama_satuan' => $satuan->nama_satuan,
+                    'jumlah_per_satuan' => (int) $satuan->jumlah_per_satuan,
+                    'jumlah' => $jumlah,
+                    'harga_pokok' => (int) $satuan->harga_pokok,
+                    'harga_jual' => $hargaJual,
+                    'subtotal' => $subtotalItem,
+                    'qty_base_to_deduct' => $qtyBaseToDeduct,
+                ];
+
+                $cartItemsForDiscount[] = [
+                    'product_id' => $produk->id_produk,
+                    'qty' => $jumlah,
+                    'price' => $hargaJual,
+                ];
             }
 
             // APPLY DISCOUNT
             $discountService = app(DiscountService::class);
-            $cartItems = collect($request->items);
+            $cartItems = collect($cartItemsForDiscount);
             $discountData = $discountService->findApplicableDiscount($cartItems);
 
-            $discountAmount = $discountData['amount'];
+            $discountAmount = (int) ($discountData['amount'] ?? 0);
             $discount = $discountData['discount'];
 
             // Calculate final total
-            $total = $subtotal - $discountAmount;
-            $change = $request->amount_received - $total;
+            $discountAmount = min($discountAmount, $totalBelanja);
+            $totalTransaksi = $totalBelanja - $discountAmount;
+            $kembalian = (int) $validated['jumlah_dibayar'] - $totalTransaksi;
 
-            if ($change < 0) {
+            if ($kembalian < 0) {
                 throw new \Exception('Jumlah uang yang diterima kurang dari total');
             }
 
             // Create transaction
+            $jenisTransaksi = $validated['jenis_transaksi'] ?? null;
+            if (!$jenisTransaksi) {
+                $jenisTransaksi = collect($itemsForCreate)->contains(function ($it) {
+                    return (int) $it['qty_base_to_deduct'] > (int) $it['jumlah'];
+                }) ? 'grosir' : 'eceran';
+            }
+
             $transaction = Transaction::create([
-                'transaction_number' => Transaction::generateTransactionNumber(),
-                'user_id' => auth()->id() ?? 1, // Default to user ID 1 if not authenticated
-                'discount_id' => $discount?->id ?? null,
-                'discount_amount' => $discountAmount,
-                'payment_type' => $request->payment_type,
-                'payment_method' => $request->payment_method,
-                'subtotal' => $subtotal,
-                'total' => $total,
-                'amount_received' => $request->amount_received,
-                'change' => $change
+                'nomor_transaksi' => Transaction::generateTransactionNumber(),
+                'id_user' => auth()->id() ?? 1, // Default to user ID 1 if not authenticated
+                'jenis_transaksi' => $jenisTransaksi,
+                'metode_pembayaran' => $validated['metode_pembayaran'],
+                'total_belanja' => $totalBelanja,
+                'diskon' => $discountAmount,
+                'total_transaksi' => $totalTransaksi,
+                'jumlah_dibayar' => (int) $validated['jumlah_dibayar'],
+                'kembalian' => $kembalian,
             ]);
 
             // Create transaction items and update stock
-            foreach ($request->items as $item) {
-                $product = Product::findOrFail($item['product_id']);
-                
-                // Calculate actual quantity to deduct from stock
-                $isWholesale = $request->payment_type === 'wholesale' && $product->wholesale > 0;
-                $qtyToDeduct = $isWholesale ? ($item['qty'] * $product->wholesale_qty_per_unit) : $item['qty'];
-
-                // Check stock
-                if ($product->stock < $qtyToDeduct) {
-                    throw new \Exception("Stok {$product->name} tidak mencukupi");
-                }
-
-                // Create transaction item
+            foreach ($itemsForCreate as $item) {
                 TransactionItem::create([
-                    'transaction_id' => $transaction->id,
-                    'product_id' => $product->id,
-                    'product_name' => $product->name,
-                    'qty' => $item['qty'],
-                    'price' => $item['price'],
-                    'subtotal' => $item['qty'] * $item['price']
+                    'id_transaksi' => $transaction->id_transaksi,
+                    'id_produk' => $item['id_produk'],
+                    'id_satuan' => $item['id_satuan'],
+                    'nama_produk' => $item['nama_produk'],
+                    'nama_satuan' => $item['nama_satuan'],
+                    'jumlah_per_satuan' => $item['jumlah_per_satuan'],
+                    'jumlah' => $item['jumlah'],
+                    'harga_pokok' => $item['harga_pokok'],
+                    'harga_jual' => $item['harga_jual'],
+                    'subtotal' => $item['subtotal'],
                 ]);
 
-                // Update stock
-                $product->decrement('stock', $qtyToDeduct);
+                Product::where('id_produk', $item['id_produk'])->decrement('stok', $item['qty_base_to_deduct']);
             }
 
             // Log discount if applied
@@ -118,22 +147,22 @@ class TransactionController extends Controller
                 $discountService->logDiscountApplication(
                     $discount,
                     $discountAmount,
-                    $transaction->transaction_number
+                    $transaction->nomor_transaksi
                 );
             }
 
             DB::commit();
 
             // Load relationships
-            $transaction->load(['user', 'items.product', 'discount']);
+            $transaction->load(['user', 'items']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Transaksi berhasil',
-                'data' => $transaction,
+                'data' => (new TransactionResource($transaction))->resolve(),
                 'discount_applied' => $discount ? true : false,
                 'discount_amount' => $discountAmount,
-                'discount_name' => $discount?->name ?? null
+                'discount_name' => $discount?->nama_diskon ?? null
             ], 201);
 
         } catch (\Exception $e) {
@@ -148,11 +177,11 @@ class TransactionController extends Controller
 
     public function show($id)
     {
-        $transaction = Transaction::with(['user', 'items.product'])->findOrFail($id);
+        $transaction = Transaction::with(['user', 'items'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
-            'data' => $transaction
+            'data' => (new TransactionResource($transaction))->resolve()
         ]);
     }
 }

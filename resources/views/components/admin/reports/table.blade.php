@@ -23,7 +23,7 @@
                     <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Harga Jual</th>
                     <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Modal</th>
                     <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Laba</th>
-                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-center">Tipe</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-center">Metode</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -47,8 +47,14 @@
                         <td class="px-6 py-4 text-center">
                             <span 
                                 class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
-                                :class="row.payment_type === 'wholesale' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"
-                                x-text="row.payment_type === 'wholesale' ? 'Grosir' : 'Eceran'"
+                                :class="{
+                                    'bg-emerald-100 text-emerald-700': (row.payment_method ?? row.payment_type) === 'tunai',
+                                    'bg-indigo-100 text-indigo-700': (row.payment_method ?? row.payment_type) === 'kartu',
+                                    'bg-purple-100 text-purple-700': (row.payment_method ?? row.payment_type) === 'qris',
+                                    'bg-amber-100 text-amber-700': (row.payment_method ?? row.payment_type) === 'ewallet',
+                                    'bg-slate-100 text-slate-700': !['tunai','kartu','qris','ewallet'].includes(row.payment_method ?? row.payment_type)
+                                }"
+                                x-text="(row.payment_method ?? row.payment_type) === 'tunai' ? 'Tunai' : (row.payment_method ?? row.payment_type) === 'kartu' ? 'Kartu' : (row.payment_method ?? row.payment_type) === 'qris' ? 'QRIS' : (row.payment_method ?? row.payment_type) === 'ewallet' ? 'E-Wallet' : ((row.payment_method ?? row.payment_type) || '-')"
                             ></span>
                         </td>
                     </tr>

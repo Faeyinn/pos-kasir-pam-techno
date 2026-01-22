@@ -24,14 +24,16 @@
                 </div>
             </div>
 
-            {{-- Type Filter --}}
+            {{-- Payment Method Filter --}}
             <select 
-                x-model="filters.payment_type"
+                x-model="filters.payment_method"
                 class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 bg-white w-full sm:w-auto"
             >
-                <option value="all">Semua Tipe</option>
-                <option value="retail">Eceran</option>
-                <option value="wholesale">Grosir</option>
+                <option value="all">Semua Metode</option>
+                <option value="tunai">Tunai</option>
+                <option value="kartu">Kartu</option>
+                <option value="qris">QRIS</option>
+                <option value="ewallet">E-Wallet</option>
             </select>
 
             {{-- Tags Filter (Multi-select simulation) --}}

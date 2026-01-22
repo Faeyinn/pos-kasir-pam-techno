@@ -1,6 +1,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 function adminDashboard() {
+    // Keep chart instances outside of Alpine reactive scope to prevent proxy issues
+    let salesChartInstance = null;
+    let categoryChartInstance = null;
+
     return {
         loading: true,
         stats: {
@@ -17,19 +21,59 @@ function adminDashboard() {
         },
         topProducts: [],
         recentTransactions: [],
-        period: 'monthly',  
-        salesProfitChart: null,
-        categoryChart: null,
+        period: 'monthly',
+        // Removed chart properties from reactive object
+        
+        // Internal state
+        _listenersAdded: false,
+        _lastFetch: 0,
+
+        apiGet(url) {
+            return fetch(url, {
+                method: 'GET',
+                cache: 'no-store',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+        },
 
         async init() {
             await this.fetchAllData();
+
+            // Prevent adding multiple listeners
+            if (!this._listenersAdded) {
+                this._listenersAdded = true;
+                this._lastFetch = Date.now();
+                
+                // Refresh data when returning to the tab/window (with minimum 5 minute interval)
+                const refreshIfStale = () => {
+                    const now = Date.now();
+                    // 5 minutes (300,000 ms) interval to prevent annoying skeleton loads
+                    if (now - this._lastFetch > 300000) {
+                        this._lastFetch = now;
+                        this.fetchAllData(true); // true = background refresh (no skeleton)
+                    }
+                };
+                
+                window.addEventListener('focus', refreshIfStale);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        refreshIfStale();
+                    }
+                });
+            }
+
             this.$nextTick(() => {
                 lucide.createIcons();
             });
         },
 
-        async fetchAllData() {
-            this.loading = true;
+        async fetchAllData(isBackgroundRefresh = false) {
+            if (!isBackgroundRefresh) {
+                this.loading = true;
+            }
             try {
                 await Promise.all([
                     this.fetchStats(),
@@ -42,16 +86,19 @@ function adminDashboard() {
                 console.error('Error fetching dashboard data:', error);
             } finally {
                 this.loading = false;
+                // Use setTimeout to ensure DOM is fully updated after x-show changes
                 this.$nextTick(() => {
-                    this.initCharts();
-                    lucide.createIcons();
+                    setTimeout(() => {
+                        this.initCharts();
+                        lucide.createIcons();
+                    }, 50);
                 });
             }
         },
 
         async fetchStats() {
             try {
-                const response = await fetch('/api/admin/stats');
+                const response = await this.apiGet('/api/admin/stats');
                 const data = await response.json();
                 if (data.success) {
                     this.stats = data.data;
@@ -63,7 +110,7 @@ function adminDashboard() {
 
         async fetchTrend() {
             try {
-                const response = await fetch('/api/admin/sales-profit-trend');
+                const response = await this.apiGet('/api/admin/sales-profit-trend');
                 const data = await response.json();
                 if (data.success) {
                     this.trendData = data.data;
@@ -75,7 +122,7 @@ function adminDashboard() {
 
         async fetchCategorySales() {
             try {
-                const response = await fetch('/api/admin/category-sales');
+                const response = await this.apiGet('/api/admin/category-sales');
                 const data = await response.json();
                 if (data.success) {
                     this.categoryData = data.data;
@@ -87,7 +134,7 @@ function adminDashboard() {
 
         async fetchTopProducts() {
             try {
-                const response = await fetch(`/api/admin/top-products?period=${this.period}`);
+                const response = await this.apiGet(`/api/admin/top-products?period=${encodeURIComponent(this.period)}`);
                 const data = await response.json();
                 if (data.success) {
                     this.topProducts = data.data;
@@ -99,7 +146,7 @@ function adminDashboard() {
 
         async fetchRecentTransactions() {
             try {
-                const response = await fetch('/api/admin/recent-transactions');
+                const response = await this.apiGet('/api/admin/recent-transactions');
                 const data = await response.json();
                 if (data.success) {
                     this.recentTransactions = data.data;
@@ -127,21 +174,32 @@ function adminDashboard() {
         },
 
         initCharts() {
-            this.initSalesProfitChart();
-            if (!this.categoryData.empty) {
-                this.initCategoryChart();
+            try {
+                this.initSalesProfitChart();
+                if (!this.categoryData.empty) {
+                    this.initCategoryChart();
+                }
+            } catch (error) {
+                console.error('Error initializing charts:', error);
             }
         },
 
         initSalesProfitChart() {
-            const ctx = document.getElementById('salesProfitChart');
+            const canvas = document.getElementById('salesProfitChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
-            if (this.salesProfitChart) {
-                this.salesProfitChart.destroy();
+            if (salesChartInstance) {
+                salesChartInstance.destroy();
+                salesChartInstance = null;
             }
 
-            this.salesProfitChart = new Chart(ctx, {
+            // Ensure we have data
+            if (!this.trendData || !Array.isArray(this.trendData)) return;
+
+            salesChartInstance = new Chart(canvas, {
                 type: 'line',
                 data: {
                     labels: this.trendData.map(d => d.label),
@@ -195,14 +253,21 @@ function adminDashboard() {
         },
 
         initCategoryChart() {
-            const ctx = document.getElementById('categoryChart');
+            const canvas = document.getElementById('categoryChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
-            if (this.categoryChart) {
-                this.categoryChart.destroy();
+            if (categoryChartInstance) {
+                categoryChartInstance.destroy();
+                categoryChartInstance = null;
             }
 
-            this.categoryChart = new Chart(ctx, {
+            // Ensure we have data
+            if (!this.categoryData || !this.categoryData.labels) return;
+
+            categoryChartInstance = new Chart(canvas, {
                 type: 'doughnut',
                 data: {
                     labels: this.categoryData.labels,
@@ -232,7 +297,9 @@ function adminDashboard() {
                                 label: (context) => {
                                     const label = context.label || '';
                                     const value = this.formatRupiah(context.parsed);
-                                    const percentage = ((context.parsed / this.categoryData.total) * 100).toFixed(1);
+                                    const percentage = this.categoryData.total > 0 
+                                        ? ((context.parsed / this.categoryData.total) * 100).toFixed(1)
+                                        : '0';
                                     return `${label}: ${value} (${percentage}%)`;
                                 }
                             }

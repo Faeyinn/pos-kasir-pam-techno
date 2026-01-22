@@ -2,8 +2,17 @@
 
 @section('header', 'Manajemen Diskon')
 
+@push('head-scripts')
+<script>
+    window.__DISCOUNTS_DATA__ = @json($discounts);
+    window.__PRODUCTS_DATA__ = @json($products);
+    window.__TAGS_DATA__ = @json($tags);
+</script>
+<x-admin.discounts.scripts />
+@endpush
+
 @section('content')
-<div x-data="discountManager" class="min-h-screen space-y-6">
+<div x-data="discountManager" x-cloak class="min-h-screen space-y-6">
     {{-- Main Management Section (Hidden on Print) --}}
     <div class="no-print space-y-6">
         <x-admin.discounts.header />
@@ -35,11 +44,5 @@
 @endsection
 
 @push('scripts')
-<script>
-    window.__DISCOUNTS_DATA__ = @json($discounts);
-    window.__PRODUCTS_DATA__ = @json($products);
-    window.__TAGS_DATA__ = @json($tags);
-</script>
-<x-admin.discounts.scripts />
 <x-admin.reports.print-styles />
 @endpush

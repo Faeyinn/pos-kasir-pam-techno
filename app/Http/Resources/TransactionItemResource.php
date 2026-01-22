@@ -13,11 +13,14 @@ class TransactionItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'product' => new ProductResource($this->whenLoaded('product')),
-            'product_name' => $this->product_name,
-            'qty' => $this->qty,
-            'price' => $this->price,
+            'id_detail_transaksi' => $this->id_detail_transaksi,
+            'id_produk' => $this->id_produk,
+            'id_satuan' => $this->id_satuan,
+            'nama_produk' => $this->nama_produk,
+            'nama_satuan' => $this->nama_satuan,
+            'jumlah_per_satuan' => $this->jumlah_per_satuan,
+            'jumlah' => $this->jumlah,
+            'harga_jual' => $this->harga_jual,
             'subtotal' => $this->subtotal,
         ];
     }

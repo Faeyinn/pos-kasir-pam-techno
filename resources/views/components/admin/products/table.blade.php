@@ -24,8 +24,8 @@
                                     <i data-lucide="package" class="w-5 h-5 text-slate-600"></i>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-slate-900" x-text="product.name"></div>
-                                    <div x-show="product.wholesale > 0" class="text-xs text-purple-600 font-medium mt-0.5">
+                                    <div class="font-medium text-slate-900" x-text="getProductName(product)"></div>
+                                    <div x-show="getWholesalePrice(product) > 0" class="text-xs text-purple-600 font-medium mt-0.5">
                                         <i data-lucide="layers" class="w-3 h-3 inline"></i>
                                         Grosir tersedia
                                     </div>
@@ -42,28 +42,28 @@
                                             <span x-text="getDiscountPercentage(product) + '%'"></span>
                                         </span>
                                     </div>
-                                    <div class="text-xs text-slate-400 line-through" x-text="'Rp ' + product.price.toLocaleString('id-ID')"></div>
+                                    <div class="text-xs text-slate-400 line-through" x-text="'Rp ' + getRetailPrice(product).toLocaleString('id-ID')"></div>
                                     <div class="text-sm font-bold text-green-600" x-text="'Rp ' + Math.round(getDiscountedPrice(product)).toLocaleString('id-ID')"></div>
                                     <div class="text-xs text-slate-500">per pcs</div>
                                 </div>
                             </template>
                             <template x-if="!getActiveDiscount(product)">
                                 <div>
-                                    <div class="text-sm font-semibold text-slate-900" x-text="'Rp ' + product.price.toLocaleString('id-ID')"></div>
+                                    <div class="text-sm font-semibold text-slate-900" x-text="'Rp ' + getRetailPrice(product).toLocaleString('id-ID')"></div>
                                     <div class="text-xs text-slate-500">per pcs</div>
                                 </div>
                             </template>
                         </td>
 
                         <td class="px-6 py-4">
-                            <template x-if="product.wholesale > 0">
+                            <template x-if="getWholesalePrice(product) > 0">
                                 <div>
-                                    <div class="text-sm font-semibold text-purple-700" x-text="'Rp ' + product.wholesale.toLocaleString('id-ID')"></div>
-                                    <div class="text-xs text-purple-600" x-text="'per ' + product.wholesale_unit + ' (' + product.wholesale_qty_per_unit + ' pcs)'"></div>
+                                    <div class="text-sm font-semibold text-purple-700" x-text="'Rp ' + getWholesalePrice(product).toLocaleString('id-ID')"></div>
+                                    <div class="text-xs text-purple-600" x-text="'per ' + getWholesaleUnit(product) + ' (' + getWholesaleQtyPerUnit(product) + ' pcs)'"></div>
                                 </div>
                             </template>
-                            <template x-if="!product.wholesale || product.wholesale === 0">
-                                <div class="text-sm text-slate-400">-</div>
+                            <template x-if="getWholesalePrice(product) === 0">
+                                <span class="text-sm text-slate-400">-</span>
                             </template>
                         </td>
 
@@ -71,13 +71,13 @@
                             <div 
                                 class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium whitespace-nowrap"
                                 :class="{
-                                    'bg-red-100 text-red-700': product.stock < 20,
-                                    'bg-yellow-100 text-yellow-700': product.stock >= 20 && product.stock < 50,
-                                    'bg-green-100 text-green-700': product.stock >= 50
+                                    'bg-red-100 text-red-700': getStock(product) < 20,
+                                    'bg-yellow-100 text-yellow-700': getStock(product) >= 20 && getStock(product) < 50,
+                                    'bg-green-100 text-green-700': getStock(product) >= 50
                                 }"
                             >
                                 <i data-lucide="package-2" class="w-3.5 h-3.5"></i>
-                                <span x-text="product.stock + ' pcs'"></span>
+                                <span x-text="getStock(product) + ' pcs'"></span>
                             </div>
                         </td>
 
@@ -116,7 +116,7 @@
                                 </button>
                                 <button 
                                     type="button"
-                                    x-on:click="deleteProduct(product.id, product.name)"
+                                    x-on:click="deleteProduct(product.id, getProductName(product))"
                                     class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                     title="Hapus Produk"
                                 >

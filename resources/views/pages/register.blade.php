@@ -50,11 +50,11 @@
                         <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 group-focus-within:text-blue-500 transition-colors">
                             <i data-lucide="user" class="w-5 h-5"></i>
                         </span>
-                        <input type="text" name="name" value="{{ old('name') }}" placeholder="Pam Techno" 
-                            class="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium @error('name') border-red-500 @enderror text-sm" 
+                        <input type="text" name="nama" value="{{ old('nama') }}" placeholder="Pam Techno" 
+                            class="w-full pl-11 pr-4 py-3 bg-gray-50/50 border {{ $errors->has('nama') ? 'border-red-500' : 'border-gray-200' }} rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium text-sm" 
                             required autofocus>
                     </div>
-                     @error('name')
+                     @error('nama')
                         <p class="text-red-500 text-xs mt-1 ml-1 font-medium">{{ $message }}</p>
                     @enderror
                 </div>
@@ -66,7 +66,7 @@
                             <i data-lucide="at-sign" class="w-5 h-5"></i>
                         </span>
                         <input type="text" name="username" value="{{ old('username') }}" placeholder="pamtechno" 
-                            class="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium @error('username') border-red-500 @enderror text-sm" 
+                            class="w-full pl-11 pr-4 py-3 bg-gray-50/50 border {{ $errors->has('username') ? 'border-red-500' : 'border-gray-200' }} rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium text-sm" 
                             required>
                     </div>
                     @error('username')
@@ -81,7 +81,7 @@
                             <i data-lucide="mail" class="w-5 h-5"></i>
                         </span>
                         <input type="email" name="email" value="{{ old('email') }}" placeholder="pamtechno@gmail.com" 
-                            class="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium @error('email') border-red-500 @enderror text-sm" 
+                            class="w-full pl-11 pr-4 py-3 bg-gray-50/50 border {{ $errors->has('email') ? 'border-red-500' : 'border-gray-200' }} rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium text-sm" 
                             required>
                     </div>
                     @error('email')
@@ -99,7 +99,7 @@
                             :type="showPassword ? 'text' : 'password'" 
                             name="password" 
                             placeholder="••••••••" 
-                            class="w-full pl-11 pr-14 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium @error('password') border-red-500 @enderror text-sm" 
+                            class="w-full pl-11 pr-14 py-3 bg-gray-50/50 border {{ $errors->has('password') ? 'border-red-500' : 'border-gray-200' }} rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-gray-700 font-medium text-sm" 
                             required
                         >
                         <button 

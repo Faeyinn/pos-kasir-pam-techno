@@ -85,12 +85,12 @@ class DiscountService
      */
     private function isProductEligible(Discount $discount, int $productId): bool
     {
-        if ($discount->target_type === 'product') {
+        if ($discount->target === 'produk') {
             // Check direct product association
-            return $discount->products->contains('id', $productId);
+            return $discount->products->contains(fn ($p) => (int) $p->id_produk === (int) $productId);
         }
 
-        if ($discount->target_type === 'tag') {
+        if ($discount->target === 'tag') {
             // Check if product has any of the discount's tags
             $product = Product::with('tags')->find($productId);
             
@@ -98,8 +98,8 @@ class DiscountService
                 return false;
             }
 
-            $discountTagIds = $discount->tags->pluck('id')->toArray();
-            $productTagIds = $product->tags->pluck('id')->toArray();
+            $discountTagIds = $discount->tags->pluck('id_tag')->toArray();
+            $productTagIds = $product->tags->pluck('id_tag')->toArray();
 
             return count(array_intersect($discountTagIds, $productTagIds)) > 0;
         }
@@ -116,15 +116,15 @@ class DiscountService
      */
     private function calculateDiscountValue(Discount $discount, int $subtotal): int
     {
-        if ($discount->type === 'percentage') {
+        if ($discount->tipe_diskon === 'persen') {
             // Percentage discount
-            $amount = ($subtotal * $discount->value) / 100;
+            $amount = ($subtotal * $discount->nilai_diskon) / 100;
             return (int) floor($amount);
         }
 
-        if ($discount->type === 'fixed') {
+        if ($discount->tipe_diskon === 'nominal') {
             // Fixed amount discount (max discount = subtotal)
-            return min($discount->value, $subtotal);
+            return min($discount->nilai_diskon, $subtotal);
         }
 
         return 0;
@@ -141,19 +141,19 @@ class DiscountService
         $discount = Discount::active()
             ->where(function ($query) use ($productId) {
                 // Product-based discount
-                $query->where('target_type', 'product')
+                $query->where('target', 'produk')
                     ->whereHas('products', function ($q) use ($productId) {
-                        $q->where('product_id', $productId);
+                        $q->where('produk.id_produk', $productId);
                     });
             })
             ->orWhere(function ($query) use ($productId) {
                 // Tag-based discount
-                $query->where('target_type', 'tag')
+                $query->where('target', 'tag')
                     ->whereHas('tags', function ($q) use ($productId) {
-                        $q->whereIn('tag_id', function ($subQuery) use ($productId) {
-                            $subQuery->select('tag_id')
-                                ->from('product_tag')
-                                ->where('product_id', $productId);
+                        $q->whereIn('tag.id_tag', function ($subQuery) use ($productId) {
+                            $subQuery->select('id_tag')
+                                ->from('produk_tag')
+                                ->where('id_produk', $productId);
                         });
                     });
             })
@@ -172,8 +172,8 @@ class DiscountService
     public function logDiscountApplication(Discount $discount, int $amount, string $transactionNumber): void
     {
         Log::info('Discount Applied', [
-            'discount_id' => $discount->id,
-            'discount_name' => $discount->name,
+            'discount_id' => $discount->id_diskon,
+            'discount_name' => $discount->nama_diskon,
             'amount' => $amount,
             'transaction' => $transactionNumber
         ]);

@@ -4,7 +4,7 @@
 
         <template x-for="i in (loading ? 12 : 0)" :key="'skeleton-grid-' + i">
             <div class="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-gray-100 shadow-sm overflow-hidden animate-pulse">
-                <div class="aspect-square bg-gradient-to-br from-slate-200 via-slate-150 to-slate-100 rounded-xl sm:rounded-2xl mb-3 sm:mb-4"></div>
+                <div class="aspect-square bg-linear-to-br from-slate-200 via-slate-150 to-slate-100 rounded-xl sm:rounded-2xl mb-3 sm:mb-4"></div>
                 <div class="space-y-3">
                     <div class="space-y-2">
                         <div class="h-4 bg-slate-200 rounded w-3/4"></div>
@@ -24,7 +24,7 @@
     <div x-show="viewMode === 'list'" class="flex flex-col gap-2 pb-24 lg:pb-6">
 
         <template x-for="i in (loading ? 10 : 0)" :key="'skeleton-list-' + i">
-            <div class="bg-white rounded-xl px-5 py-4 border border-gray-100 shadow-sm flex items-center justify-between gap-4 animate-pulse min-h-[70px]">
+            <div class="bg-white rounded-xl px-5 py-4 border border-gray-100 shadow-sm flex items-center justify-between gap-4 animate-pulse min-h-17.5">
                 <div class="flex-1 space-y-2">
                     <div class="h-4 bg-slate-200 rounded w-1/3"></div>
                     <div class="h-3 bg-slate-200 rounded w-1/5"></div>
@@ -36,7 +36,7 @@
         <template x-for="product in (!loading ? filteredProducts : [])" :key="'list-' + product.id">
             <div 
                 @click="addToCart(product)"
-                class="group bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:ring-1 hover:ring-blue-400 hover:bg-blue-50/30 shadow-sm transition-all cursor-pointer grid grid-cols-12 gap-0 overflow-hidden min-h-[72px]"
+                class="group bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:ring-1 hover:ring-blue-400 hover:bg-blue-50/30 shadow-sm transition-all cursor-pointer grid grid-cols-12 gap-0 overflow-hidden min-h-18"
             >
                 <div class="col-span-12 sm:col-span-5 p-4 flex flex-col justify-center border-b sm:border-b-0 sm:border-r border-gray-100 group-hover:border-blue-200/50 transition-colors">
                     <h3 class="font-bold text-gray-800 text-sm truncate group-hover:text-blue-700 transition-colors" x-text="product.name"></h3>
@@ -44,7 +44,7 @@
                         <div class="flex gap-1 mt-1.5 flex-wrap">
                             <template x-for="tag in product.tags" :key="'tag-' + product.id + '-' + tag.id">
                                 <span 
-                                    class="text-[10px] px-1.5 py-0.5 rounded-md border font-medium truncate max-w-[100px]" 
+                                    class="text-[10px] px-1.5 py-0.5 rounded-md border font-medium truncate max-w-25" 
                                     :style="`background-color: ${tag.color}10; color: ${tag.color}; border-color: ${tag.color}20`"
                                     x-text="tag.name"
                                 ></span>

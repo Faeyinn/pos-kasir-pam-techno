@@ -1,7 +1,10 @@
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('userManager', () => ({
-        users: window.__USERS_DATA__ || [],
+        users: (window.__USERS_DATA__ || []).map(u => ({
+            ...u,
+            name: u.nama ?? u.name,
+        })),
         search: '',
         editModalOpen: false,
         currentEditUser: null,

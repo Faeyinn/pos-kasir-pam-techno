@@ -13,8 +13,8 @@ class TagResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
+            'id_tag' => $this->id_tag,
+            'nama_tag' => $this->nama_tag,
             'slug' => $this->slug,
             'color' => $this->color,
         ];

@@ -5,7 +5,7 @@
         <x-kasir.header.filter-button />
     </div>
 
-    <div class="flex gap-2 items-start justify-between min-h-[40px]">
+    <div class="flex gap-2 items-start justify-between min-h-10">
         <x-kasir.header.active-filters />
         <x-kasir.header.view-toggle />
     </div>

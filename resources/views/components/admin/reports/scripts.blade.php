@@ -10,7 +10,7 @@ document.addEventListener('alpine:init', () => {
         filters: {
             start_date: new Date().toISOString().split('T')[0].slice(0, 8) + '01',
             end_date: new Date().toISOString().split('T')[0],
-            payment_type: 'all',
+            payment_method: 'all',
             tags: [],
             search: ''
         },
@@ -61,7 +61,8 @@ document.addEventListener('alpine:init', () => {
             const params = new URLSearchParams({
                 start_date: this.filters.start_date,
                 end_date: this.filters.end_date,
-                payment_type: this.filters.payment_type,
+                // Prefer the new, clearer name
+                payment_method: this.filters.payment_method,
                 search: this.filters.search
             });
             if (this.filters.tags.length > 0) {

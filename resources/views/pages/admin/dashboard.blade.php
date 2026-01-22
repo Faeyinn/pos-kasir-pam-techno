@@ -1,7 +1,12 @@
 @extends('layouts.admin')
 @section('header', 'Dashboard')
+
+@push('head-scripts')
+    <x-admin.scripts.dashboard />
+@endpush
+
 @section('content')
-<div x-data="adminDashboard()" x-init="init()" class="space-y-6">
+<div x-data="adminDashboard()" x-init="init()" x-cloak class="space-y-6">
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <x-admin.dashboard.kpi-card 
@@ -56,8 +61,4 @@
         :loading="false" 
     />
 </div>
-
-@push('scripts')
-    <x-admin.scripts.dashboard />
-@endpush
 @endsection
