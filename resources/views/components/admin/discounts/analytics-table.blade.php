@@ -22,10 +22,10 @@
                         Diskon Diberikan
                     </th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-slate-700 uppercase">
-                        Revenue
+                        Total Penjualan
                     </th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-slate-700 uppercase">
-                        Profit
+                        Laba
                     </th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-slate-700 uppercase">
                         ROI

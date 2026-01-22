@@ -1,6 +1,6 @@
 <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
     <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h4 class="text-lg font-bold text-slate-900">Detail Penjualan</h4>
+        <h4 class="text-lg font-bold text-slate-900">Laporan Detail Penjualan</h4>
         <div class="relative w-full sm:w-64">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
             <input 

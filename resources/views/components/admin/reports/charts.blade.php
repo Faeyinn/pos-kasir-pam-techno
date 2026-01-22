@@ -9,7 +9,7 @@
 
     {{-- Profit by Tag --}}
     <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-        <h4 class="text-lg font-bold text-slate-900 mb-4">Distribusi Laba per Tag</h4>
+        <h4 class="text-lg font-bold text-slate-900 mb-4">Distribusi Laba per Kategori</h4>
         <div class="relative h-72 w-full flex items-center justify-center">
             <canvas id="profitTagChart"></canvas>
         </div>

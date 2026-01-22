@@ -6,7 +6,7 @@ document.addEventListener('alpine:init', () => {
         detailLoading: false,
         
         availableTags: window.__TAGS_DATA__ || [],
-        selectedTagsLabel: 'Pilih Tag',
+        selectedTagsLabel: 'Pilih kategori',
         filters: {
             start_date: new Date().toISOString().split('T')[0].slice(0, 8) + '01',
             end_date: new Date().toISOString().split('T')[0],

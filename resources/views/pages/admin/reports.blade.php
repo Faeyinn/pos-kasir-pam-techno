@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('header', 'Laporan & Analisis')
+@section('header', 'Laporan & Analisis Penjualan')
 
 @section('content')
 <div x-data="reportManager" class="min-h-screen">
