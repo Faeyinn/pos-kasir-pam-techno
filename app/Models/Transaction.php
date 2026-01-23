@@ -27,6 +27,7 @@ class Transaction extends Model
         'total_transaksi',
         'jumlah_dibayar',
         'kembalian',
+        'id_diskon',
         'created_at',
         'updated_at'
     ];
@@ -58,6 +59,14 @@ class Transaction extends Model
     public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class, 'id_transaksi', 'id_transaksi');
+    }
+
+    /**
+     * Get the discount applied to this transaction
+     */
+    public function appliedDiscount(): BelongsTo
+    {
+        return $this->belongsTo(Discount::class, 'id_diskon', 'id_diskon');
     }
 
     /**

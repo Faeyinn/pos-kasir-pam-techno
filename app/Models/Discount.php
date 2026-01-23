@@ -51,10 +51,7 @@ class Discount extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where(function($q) {
-                        $q->where('is_active', true)
-                            ->orWhere('auto_active', true);
-        })
+        return $query->where('is_active', true)
                 ->where('tanggal_mulai', '<=', now())
                 ->where('tanggal_selesai', '>=', now());
     }
@@ -78,6 +75,10 @@ class Discount extends Model
      */
     public function getStatusAttribute(): string
     {
+        if (!$this->is_active) {
+            return 'disabled'; // Dinonaktifkan (Manual)
+        }
+
         $now = now();
         
         if ($now < $this->tanggal_mulai) {
@@ -88,11 +89,6 @@ class Discount extends Model
             return 'expired'; // Berakhir
         }
 
-        // Within date range
-        if ($this->is_active || $this->auto_active) {
-            return 'active'; // Aktif
-        }
-
-        return 'disabled'; // Dinonaktifkan (Manual)
+        return 'active'; // Aktif
     }
 }

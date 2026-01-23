@@ -149,6 +149,7 @@ class TransactionSeeder extends Seeder
                         'metode_pembayaran' => $metodePembayaran,
                         'total_belanja' => $totalBelanja,
                         'diskon' => $discountAmount,
+                        'id_diskon' => $discountData['discount']?->id_diskon,
                         'total_transaksi' => $totalTransaksi,
                         'jumlah_dibayar' => $jumlahDibayar,
                         'kembalian' => $kembalian,

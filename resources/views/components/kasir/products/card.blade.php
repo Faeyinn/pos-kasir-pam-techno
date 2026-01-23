@@ -4,9 +4,9 @@
 >
     <!-- Discount Badge -->
     <template x-if="product.hasDiscount">
-        <div class="absolute top-0 right-0 m-3 sm:m-4 z-10">
-            <div class="bg-linear-to-br from-red-500 to-red-600 text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg shadow-lg font-black text-[10px] sm:text-xs flex items-center gap-1">
-                <i data-lucide="tag" class="w-3 h-3"></i>
+        <div class="absolute top-3 right-3 z-10 pointer-events-none">
+            <div class="bg-red-600 text-white px-3 py-1.5 rounded-lg shadow-xl font-black text-[10px] sm:text-xs flex flex-col items-center leading-tight transform rotate-3 hover:rotate-0 transition-transform">
+                <span class="text-[8px] opacity-80 uppercase tracking-tighter">SALE</span>
                 <span x-text="product.discount.type === 'percentage' 
                     ? `-${product.discount.value}%` 
                     : `-Rp ${formatNumber(product.discount.value)}`">
@@ -38,7 +38,13 @@
 
         <h4 class="font-bold text-gray-900 text-sm sm:text-base mb-2 line-clamp-2 leading-tight" x-text="product.name"></h4>
 
-        <div class="flex flex-wrap gap-1.5 mb-3" x-show="product.tags && product.tags.length > 0">
+        <div class="flex flex-wrap gap-1.5 mb-3">
+            <template x-if="product.hasDiscount">
+                <span 
+                    class="px-2.5 py-1 rounded-md text-[10px] font-black bg-red-50 text-red-600 border border-red-200 uppercase tracking-tighter"
+                    x-text="product.discount.name"
+                ></span>
+            </template>
             <template x-for="tag in (product.tags || [])" :key="tag.id">
                  <span 
                     class="px-2.5 py-1 rounded-md text-[10px] font-bold border" 

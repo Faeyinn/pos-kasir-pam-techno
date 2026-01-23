@@ -9,6 +9,7 @@ use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\User;
+use App\Models\ProdukSatuan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,7 +26,6 @@ class TransactionDiscountSeeder extends Seeder
         }
 
         // 2. Siapkan Produk dan Tag
-        // Pastikan ada produk dan tag untuk dijual
         if (Tag::count() == 0) {
             $this->call(TagSeeder::class);
         }
@@ -34,7 +34,7 @@ class TransactionDiscountSeeder extends Seeder
             $this->call(ProductSeeder::class);
         }
         
-        $products = Product::all();
+        $products = Product::with(['tags', 'satuan'])->get();
         $tags = Tag::all();
 
         if ($products->isEmpty() || $tags->isEmpty()) {
@@ -45,36 +45,36 @@ class TransactionDiscountSeeder extends Seeder
         // 3. Buat Diskon Riil (Jika belum ada yang cocok)
         $discounts = [];
         
-        // Diskon Persentase (Efektif)
+        // Diskon Persentase
         $promoGajian = Discount::updateOrCreate(
-            ['name' => 'Promo Gajian 10%'],
+            ['nama_diskon' => 'Promo Gajian 10%'],
             [
-                'type' => 'percentage',
-                'value' => 10,
-                'target_type' => 'tag',
-                'start_date' => Carbon::now()->subDays(60),
-                'end_date' => Carbon::now()->addDays(30),
+                'tipe_diskon' => 'persen',
+                'nilai_diskon' => 10,
+                'target' => 'tag',
+                'tanggal_mulai' => Carbon::now()->subDays(60),
+                'tanggal_selesai' => Carbon::now()->addDays(30),
                 'is_active' => true,
-                'auto_activate' => true
+                'auto_active' => true
             ]
         );
-        $promoGajian->tags()->sync($tags->pluck('id')->random(min(3, $tags->count())));
+        $promoGajian->tags()->sync($tags->pluck('id_tag')->random(min(3, $tags->count())));
         $discounts[] = $promoGajian;
 
-        // Diskon Fixed (Biasa)
+        // Diskon Nominal
         $potonganLangsung = Discount::updateOrCreate(
-            ['name' => 'Potongan Langsung 5rb'],
+            ['nama_diskon' => 'Potongan Langsung 5rb'],
             [
-                'type' => 'fixed',
-                'value' => 5000,
-                'target_type' => 'product',
-                'start_date' => Carbon::now()->subDays(30),
-                'end_date' => Carbon::now()->addDays(15),
+                'tipe_diskon' => 'nominal',
+                'nilai_diskon' => 5000,
+                'target' => 'produk',
+                'tanggal_mulai' => Carbon::now()->subDays(30),
+                'tanggal_selesai' => Carbon::now()->addDays(15),
                 'is_active' => true,
-                'auto_activate' => true
+                'auto_active' => true
             ]
         );
-        $potonganLangsung->products()->sync($products->pluck('id')->random(min(5, $products->count())));
+        $potonganLangsung->products()->sync($products->pluck('id_produk')->random(min(5, $products->count())));
         $discounts[] = $potonganLangsung;
 
         // 4. Buat Data Transaksi (30 Hari Terakhir)
@@ -82,81 +82,90 @@ class TransactionDiscountSeeder extends Seeder
         
         DB::beginTransaction();
         try {
-            for ($i = 0; $i < 400; $i++) {
-                // Generate random date in the last 30 days
+            // Kita buat 200 transaksi saja agar lebih cepat tapi cukup untuk laporan
+            for ($i = 0; $i < 200; $i++) {
                 $date = Carbon::now()
                     ->subDays(rand(0, 30))
                     ->subHours(rand(0, 23))
                     ->subMinutes(rand(0, 59))
                     ->subSeconds(rand(0, 59));
                 
-                // Randomly choose if this transaction has a discount (40% chance)
-                $hasDiscount = rand(1, 10) <= 4;
+                // 50% transaksi pakai diskon
+                $hasDiscount = rand(1, 10) <= 5;
                 $discount = $hasDiscount ? $discounts[array_rand($discounts)] : null;
                 
-                // Pick random items (1-6 items)
-                $numItems = rand(1, 6);
+                // Pick random items (1-4 items)
+                $numItems = rand(1, 4);
                 $selectedProducts = $products->random(min($numItems, $products->count()));
                 
-                $subtotal = 0;
+                $totalBelanja = 0;
                 $itemsData = [];
                 
                 foreach ($selectedProducts as $product) {
-                    $qty = rand(1, 5);
-                    $itemSubtotal = $product->price * $qty;
-                    $subtotal += $itemSubtotal;
+                    $satuan = $product->satuan->firstWhere('is_default', true) ?? $product->satuan->first();
+                    if (!$satuan) continue;
+
+                    $qty = rand(1, 3);
+                    $itemSubtotal = $satuan->harga_jual * $qty;
+                    $totalBelanja += $itemSubtotal;
                     
                     $itemsData[] = [
-                        'product_id' => $product->id,
-                        'product_name' => $product->name,
-                        'qty' => $qty,
-                        'price' => $product->price,
+                        'id_produk' => $product->id_produk,
+                        'id_satuan' => $satuan->id_satuan,
+                        'nama_produk' => $product->nama_produk,
+                        'nama_satuan' => $satuan->nama_satuan,
+                        'jumlah_per_satuan' => $satuan->jumlah_per_satuan,
+                        'jumlah' => $qty,
+                        'harga_pokok' => $satuan->harga_pokok,
+                        'harga_jual' => $satuan->harga_jual,
                         'subtotal' => $itemSubtotal,
                         'created_at' => $date,
                         'updated_at' => $date,
                     ];
                 }
 
+                if (empty($itemsData)) continue;
+
                 // Calculate Discount Amount
                 $discountAmount = 0;
                 if ($discount) {
-                    if ($discount->type === 'percentage') {
-                        $discountAmount = ($subtotal * $discount->value) / 100;
+                    if ($discount->tipe_diskon === 'persen') {
+                        $discountAmount = ($totalBelanja * $discount->nilai_diskon) / 100;
                     } else {
-                        $discountAmount = min($discount->value, $subtotal);
+                        $discountAmount = min($discount->nilai_diskon, $totalBelanja);
                     }
                 }
 
-                $total = max(0, $subtotal - $discountAmount);
-                $received = ceil($total / 1000) * 1000; // Round up to nearest 1000
-                if ($received < $total) $received += 1000;
+                $totalTransaksi = max(0, $totalBelanja - $discountAmount);
+                $received = ceil($totalTransaksi / 1000) * 1000;
+                if ($received < $totalTransaksi) $received += 1000;
 
                 $transaction = Transaction::create([
-                    'transaction_number' => 'TRX-' . $date->format('YmdHis') . '-' . Str::upper(Str::random(4)),
-                    'user_id' => $user->id,
-                    'discount_id' => $discount ? $discount->id : null,
-                    'discount_amount' => $discountAmount,
-                    'payment_type' => rand(1, 10) > 8 ? 'wholesale' : 'retail',
-                    'payment_method' => ['tunai', 'qris', 'ewallet', 'kartu'][rand(0, 3)],
-                    'subtotal' => $subtotal,
-                    'total' => $total,
-                    'amount_received' => $received,
-                    'change' => $received - $total,
+                    'nomor_transaksi' => 'TRX-' . $date->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+                    'id_user' => $user->id,
+                    'id_diskon' => $discount ? $discount->id_diskon : null,
+                    'diskon' => $discountAmount,
+                    'jenis_transaksi' => rand(1, 10) > 8 ? 'grosir' : 'eceran',
+                    'metode_pembayaran' => ['tunai', 'qris', 'ewallet', 'kartu'][rand(0, 3)],
+                    'total_belanja' => $totalBelanja,
+                    'total_transaksi' => $totalTransaksi,
+                    'jumlah_dibayar' => $received,
+                    'kembalian' => $received - $totalTransaksi,
                     'created_at' => $date,
                     'updated_at' => $date,
                 ]);
 
                 foreach ($itemsData as $item) {
-                    $item['transaction_id'] = $transaction->id;
+                    $item['id_transaksi'] = $transaction->id_transaksi;
                     TransactionItem::create($item);
                 }
             }
             DB::commit();
-            $this->command->info('Berhasil membuat 400 data transaksi dengan variasi diskon dalam 30 hari terakhir.');
+            $this->command->info('Berhasil membuat data transaksi dengan link ke diskon.');
         } catch (\Exception $e) {
             DB::rollback();
             $this->command->error('Gagal membuat data: ' . $e->getMessage());
-            throw $e; // Re-throw to see the full stack trace
+            throw $e;
         }
     }
 }

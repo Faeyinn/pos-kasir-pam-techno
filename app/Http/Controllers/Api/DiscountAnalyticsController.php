@@ -102,10 +102,44 @@ class DiscountAnalyticsController extends Controller
                 ? round(($withDiscount->total_profit / $withDiscount->total_revenue) * 100, 1)
                 : 0;
 
-            // NOTE: In the current Indonesian schema, `transaksi` only stores the discount AMOUNT (`diskon`),
-            // not which discount record (`id_diskon`) was applied. Because of that, per-discount performance
-            // cannot be computed reliably.
-            $performance = collect([]);
+            // Calculate per-discount performance
+            $performanceData = DB::table('transaksi')
+                ->join('diskon', 'transaksi.id_diskon', '=', 'diskon.id_diskon')
+                ->whereBetween('transaksi.created_at', [$startDate, $endDate])
+                ->selectRaw('
+                    diskon.id_diskon,
+                    diskon.nama_diskon,
+                    COUNT(*) as usage_count,
+                    SUM(transaksi.diskon) as total_discount_given,
+                    SUM(transaksi.total_transaksi) as total_revenue
+                ')
+                ->groupBy('diskon.id_diskon', 'diskon.nama_diskon')
+                ->get();
+
+            $performance = $performanceData->map(function($p) use ($startDate, $endDate) {
+                // Calculate raw profit for transactions using this specific discount
+                $rawProfit = DB::table('detail_transaksi')
+                    ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+                    ->where('transaksi.id_diskon', $p->id_diskon)
+                    ->whereBetween('transaksi.created_at', [$startDate, $endDate])
+                    ->sum(DB::raw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah'));
+
+                $netProfit = (float) $rawProfit - (float) $p->total_discount_given;
+                
+                // ROI = (Revenue / Discount Given) * 100
+                $roi = $p->total_discount_given > 0
+                    ? round(($p->total_revenue / $p->total_discount_given) * 100, 1)
+                    : 0;
+
+                return [
+                    'name' => $p->nama_diskon,
+                    'usage_count' => (int) $p->usage_count,
+                    'total_discount_given' => (int) $p->total_discount_given,
+                    'total_revenue' => (int) $p->total_revenue,
+                    'total_profit' => (int) $netProfit,
+                    'roi_percentage' => $roi
+                ];
+            });
 
             return response()->json([
                 'success' => true,

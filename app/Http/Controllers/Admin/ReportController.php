@@ -65,9 +65,36 @@ class ReportController extends Controller
                 $transactionQuery->where('metode_pembayaran', $paymentMethod);
             }
 
-            // Get basic stats
-            $totalSales = (int) $transactionQuery->sum('total_transaksi');
-            $totalTransactions = $transactionQuery->count();
+            // If tags are present, we calculate sales and transactions based on those tags
+            if ($request->tags) {
+                $tagIds = is_array($request->tags) ? $request->tags : explode(',', $request->tags);
+                
+                // Total Sales for these tags only
+                $totalSales = (int) TransactionItem::join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
+                    ->join('produk_tag', 'detail_transaksi.id_produk', '=', 'produk_tag.id_produk')
+                    ->whereBetween('transaksi.created_at', $dates)
+                    ->whereIn('produk_tag.id_tag', $tagIds)
+                    ->when($paymentMethod && $paymentMethod !== 'all', function($q) use ($paymentMethod) {
+                        return $q->where('transaksi.metode_pembayaran', $paymentMethod);
+                    })
+                    ->sum('detail_transaksi.subtotal');
+
+                // Unique transactions containing these tags
+                $totalTransactions = Transaction::join('detail_transaksi', 'transaksi.id_transaksi', '=', 'detail_transaksi.id_transaksi')
+                    ->join('produk_tag', 'detail_transaksi.id_produk', '=', 'produk_tag.id_produk')
+                    ->whereBetween('transaksi.created_at', $dates)
+                    ->whereIn('produk_tag.id_tag', $tagIds)
+                    ->when($paymentMethod && $paymentMethod !== 'all', function($q) use ($paymentMethod) {
+                        return $q->where('transaksi.metode_pembayaran', $paymentMethod);
+                    })
+                    ->distinct('transaksi.id_transaksi')
+                    ->count('transaksi.id_transaksi');
+            } else {
+                // Get basic stats from the whole transactions
+                $totalSales = (int) $transactionQuery->sum('total_transaksi');
+                $totalTransactions = $transactionQuery->count();
+            }
+
             $avgTransaction = $totalTransactions > 0 ? (int) ($totalSales / $totalTransactions) : 0;
 
             // Calculate profit from transaction items
@@ -82,12 +109,8 @@ class ReportController extends Controller
             // Tag filter for profit
             if ($request->tags) {
                 $tagIds = is_array($request->tags) ? $request->tags : explode(',', $request->tags);
-                $profitQuery->whereExists(function ($q) use ($tagIds) {
-                    $q->select(DB::raw(1))
-                        ->from('produk_tag')
-                        ->whereColumn('produk_tag.id_produk', 'detail_transaksi.id_produk')
-                        ->whereIn('produk_tag.id_tag', $tagIds);
-                });
+                $profitQuery->join('produk_tag', 'detail_transaksi.id_produk', '=', 'produk_tag.id_produk')
+                    ->whereIn('produk_tag.id_tag', $tagIds);
             }
 
             $totalProfit = (int) ($profitQuery->value('total_profit') ?? 0);
@@ -170,17 +193,29 @@ class ReportController extends Controller
                 $tagProfitQuery->where('transaksi.metode_pembayaran', $paymentMethod);
             }
 
-            $tagProfitData = $tagProfitQuery->get();
-
-            // 3. Transaction Trend (Count)
-            $trxTrendQuery = Transaction::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-                ->whereBetween('created_at', $dates);
-
-            if ($paymentMethod && $paymentMethod !== 'all') {
-                $trxTrendQuery->where('metode_pembayaran', $paymentMethod);
+            if ($request->tags) {
+                $tagIds = is_array($request->tags) ? $request->tags : explode(',', $request->tags);
+                $tagProfitQuery->whereIn('tag.id_tag', $tagIds);
             }
 
-            $trxTrend = $trxTrendQuery->groupBy(DB::raw('DATE(created_at)'))
+            $tagProfitData = $tagProfitQuery->get();
+
+            // 3. Transaction Trend (Count) - Filtered by Tags if present
+            $trxTrendQuery = Transaction::selectRaw('DATE(transaksi.created_at) as date, COUNT(DISTINCT transaksi.id_transaksi) as count')
+                ->whereBetween('transaksi.created_at', $dates);
+
+            if ($paymentMethod && $paymentMethod !== 'all') {
+                $trxTrendQuery->where('transaksi.metode_pembayaran', $paymentMethod);
+            }
+
+            if ($request->tags) {
+                $tagIds = is_array($request->tags) ? $request->tags : explode(',', $request->tags);
+                $trxTrendQuery->join('detail_transaksi', 'transaksi.id_transaksi', '=', 'detail_transaksi.id_transaksi')
+                    ->join('produk_tag', 'detail_transaksi.id_produk', '=', 'produk_tag.id_produk')
+                    ->whereIn('produk_tag.id_tag', $tagIds);
+            }
+
+            $trxTrend = $trxTrendQuery->groupBy(DB::raw('DATE(transaksi.created_at)'))
                 ->orderBy('date')
                 ->get();
 

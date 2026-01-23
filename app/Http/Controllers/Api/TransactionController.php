@@ -119,6 +119,7 @@ class TransactionController extends Controller
                 'metode_pembayaran' => $validated['metode_pembayaran'],
                 'total_belanja' => $totalBelanja,
                 'diskon' => $discountAmount,
+                'id_diskon' => $discount?->id_diskon,
                 'total_transaksi' => $totalTransaksi,
                 'jumlah_dibayar' => (int) $validated['jumlah_dibayar'],
                 'kembalian' => $kembalian,

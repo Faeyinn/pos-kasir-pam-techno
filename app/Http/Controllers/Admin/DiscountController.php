@@ -111,9 +111,9 @@ class DiscountController extends Controller
             DB::commit();
 
             Log::info('Discount Created Successfully:', [
-                'id' => $discount->id,
-                'start_date_saved' => $discount->start_date,
-                'end_date_saved' => $discount->end_date
+                'id' => $discount->id_diskon,
+                'start_date_saved' => $discount->tanggal_mulai,
+                'end_date_saved' => $discount->tanggal_selesai
             ]);
 
             return response()->json([
@@ -199,9 +199,9 @@ class DiscountController extends Controller
             DB::commit();
 
             Log::info('Discount Updated Successfully:', [
-                'id' => $discount->id,
-                'start_date_saved' => $discount->fresh()->start_date,
-                'end_date_saved' => $discount->fresh()->end_date
+                'id' => $discount->id_diskon,
+                'start_date_saved' => $discount->fresh()->tanggal_mulai,
+                'end_date_saved' => $discount->fresh()->tanggal_selesai
             ]);
 
             return response()->json([

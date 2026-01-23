@@ -11,7 +11,7 @@ document.addEventListener('alpine:init', () => {
         formData: {
             id: null, name: '', type: 'percentage', value: 0,
             target_type: 'product', target_ids: [],
-            start_date: '', end_date: '', is_active: false, auto_activate: true
+            start_date: '', end_date: '', is_active: true, auto_activate: true
         },
 
         productSearch: '',
@@ -76,7 +76,7 @@ document.addEventListener('alpine:init', () => {
             this.formData = {
                 id: null, name: '', type: 'percentage', value: 0,
                 target_type: 'product', target_ids: [],
-                start_date: '', end_date: '', is_active: false, auto_activate: true
+                start_date: '', end_date: '', is_active: true, auto_activate: true
             };
         },
 
@@ -92,6 +92,7 @@ document.addEventListener('alpine:init', () => {
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify(this.formData)
@@ -119,6 +120,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     }
                 });
@@ -136,7 +138,10 @@ document.addEventListener('alpine:init', () => {
             try {
                 const res = await fetch(`/api/admin/discounts/${id}`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content 
+                    }
                 });
 
                 const data = await res.json();

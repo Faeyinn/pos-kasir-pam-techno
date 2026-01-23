@@ -268,20 +268,43 @@
                     </div>
                 </div>
 
-                {{-- Auto-Activation Toggle --}}
-                <div class="flex items-center justify-between">
-                    <label class="text-sm font-medium text-slate-700">
-                        Aktif/Nonaktif Otomatis
-                    </label>
-                    
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            x-model="formData.auto_activate" 
-                            class="sr-only peer"
-                        >
-                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
+                {{-- Status & Auto-Activation Toggles --}}
+                <div class="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col">
+                            <label class="text-sm font-semibold text-slate-700">
+                                Status Manual
+                            </label>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Master Switch</span>
+                        </div>
+                        
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                x-model="formData.is_active" 
+                                class="sr-only peer"
+                            >
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between border-l border-slate-200 pl-6">
+                        <div class="flex flex-col">
+                            <label class="text-sm font-semibold text-slate-700">
+                                Aktivasi Jadwal
+                            </label>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Auto-Schedule</span>
+                        </div>
+                        
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                x-model="formData.auto_activate" 
+                                class="sr-only peer"
+                            >
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
                 </div>
             </div>
 

@@ -32,7 +32,7 @@ document.addEventListener('alpine:init', () => {
 
         updateTagsLabel() {
             if (this.filters.tags.length === 0) {
-                this.selectedTagsLabel = 'Pilih Tag';
+                this.selectedTagsLabel = 'Pilih Kategori';
             } else if (this.filters.tags.length === 1) {
                 const tag = this.availableTags.find(t => t.id == this.filters.tags[0]);
                 this.selectedTagsLabel = tag ? tag.name : '1 Tag';

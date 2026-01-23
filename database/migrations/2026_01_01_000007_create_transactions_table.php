@@ -20,6 +20,7 @@ return new class extends Migration
             
             // Relationships
             $table->foreignId('id_user')->constrained('users', 'id')->restrictOnDelete();
+            $table->foreignId('id_diskon')->nullable()->constrained('diskon', 'id_diskon')->nullOnDelete();
             
             // Payment info
             $table->enum('jenis_transaksi', ['eceran', 'grosir'])->default('eceran');
