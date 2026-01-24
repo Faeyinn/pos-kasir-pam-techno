@@ -10,12 +10,11 @@ document.addEventListener('alpine:init', () => {
         
         formData: {
             id: null, name: '', type: 'percentage', value: 0,
-            target_type: 'product', target_ids: [],
+            target_ids: [],
             start_date: '', end_date: '', is_active: true, auto_activate: true
         },
 
         productSearch: '',
-        tagSearch: '',
 
         comparison: { without_discount: {}, with_discount: {}, diff: {} },
         performance: [],
@@ -23,6 +22,10 @@ document.addEventListener('alpine:init', () => {
         init() {
             this.$nextTick(() => lucide.createIcons());
             this.loadAnalytics();
+
+            // Refresh icons when filtering or selection changes
+            this.$watch('productSearch', () => this.$nextTick(() => lucide.createIcons()));
+            this.$watch('formData.target_ids', () => this.$nextTick(() => lucide.createIcons()));
         },
 
         async loadAnalytics() {
@@ -39,10 +42,26 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        get filteredProducts() {
+            const query = this.productSearch.toLowerCase();
+            if (!query) return this.products;
+
+            return this.products.filter(p => {
+                const nameMatch = (p.name || '').toLowerCase().includes(query);
+                const tagMatch = (p.tags || []).some(t => (t.name || '').toLowerCase().includes(query));
+                return nameMatch || tagMatch;
+            });
+        },
+
+        selectAllFiltered() {
+            const filteredIds = this.filteredProducts.map(p => p.id);
+            // Union of current selection and currently visible filtered items
+            this.formData.target_ids = [...new Set([...this.formData.target_ids, ...filteredIds])];
+        },
+
         openModal(mode, discount = null) {
             this.modalMode = mode;
             this.productSearch = '';
-            this.tagSearch = '';
             
             if (mode === 'edit' && discount) {
                 this.formData = {
@@ -50,10 +69,7 @@ document.addEventListener('alpine:init', () => {
                     name: discount.name,
                     type: discount.type,
                     value: discount.value,
-                    target_type: discount.target_type,
-                    target_ids: discount.target_type === 'product' 
-                        ? discount.products.map(p => p.id)
-                        : discount.tags.map(t => t.id),
+                    target_ids: discount.products.map(p => p.id),
                     start_date: this.formatForInput(discount.start_date),
                     end_date: this.formatForInput(discount.end_date),
                     is_active: discount.is_active,
@@ -75,7 +91,7 @@ document.addEventListener('alpine:init', () => {
         resetForm() {
             this.formData = {
                 id: null, name: '', type: 'percentage', value: 0,
-                target_type: 'product', target_ids: [],
+                target_ids: [],
                 start_date: '', end_date: '', is_active: true, auto_activate: true
             };
         },

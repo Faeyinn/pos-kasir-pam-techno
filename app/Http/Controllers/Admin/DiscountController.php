@@ -24,7 +24,7 @@ class DiscountController extends Controller
             ->values();
 
         $products = Product::active()
-            ->with(['satuan' => fn ($q) => $q->where('is_default', true)])
+            ->with(['satuan' => fn ($q) => $q->where('is_default', true), 'tags'])
             ->orderBy('nama_produk')
             ->get()
             ->map(fn (Product $p) => $this->formatProductForDiscountPicker($p))
@@ -56,19 +56,12 @@ class DiscountController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        Log::info('Discount Store Request:', [
-            'all_data' => $request->all(),
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date
-        ]);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:percentage,fixed',
             'value' => 'required|integer|min:0',
-            'target_type' => 'required|in:product,tag',
             'target_ids' => 'required|array|min:1',
-            'target_ids.*' => 'required|integer',
+            'target_ids.*' => 'required|integer|exists:produk,id_produk',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'is_active' => 'boolean',
@@ -80,41 +73,20 @@ class DiscountController extends Controller
             $startDate = Carbon::parse($validated['start_date']);
             $endDate = Carbon::parse($validated['end_date']);
             
-            Log::info('Parsed Dates:', [
-                'start_date_parsed' => $startDate->toDateTimeString(),
-                'end_date_parsed' => $endDate->toDateTimeString()
-            ]);
-            
             $discount = Discount::create([
                 'nama_diskon' => $validated['name'],
                 'tipe_diskon' => $validated['type'] === 'percentage' ? 'persen' : 'nominal',
                 'nilai_diskon' => $validated['value'],
-                'target' => $validated['target_type'] === 'product' ? 'produk' : 'tag',
+                'target' => 'produk',
                 'tanggal_mulai' => $startDate,
                 'tanggal_selesai' => $endDate,
-                'is_active' => $validated['is_active'] ?? false,
+                'is_active' => $validated['is_active'] ?? true,
                 'auto_active' => $validated['auto_activate'] ?? true
             ]);
 
-            if ($validated['target_type'] === 'product') {
-                $request->validate([
-                    'target_ids.*' => 'exists:produk,id_produk',
-                ]);
-                $discount->products()->attach($validated['target_ids']);
-            } else {
-                $request->validate([
-                    'target_ids.*' => 'exists:tag,id_tag',
-                ]);
-                $discount->tags()->attach($validated['target_ids']);
-            }
+            $discount->products()->sync($validated['target_ids']);
 
             DB::commit();
-
-            Log::info('Discount Created Successfully:', [
-                'id' => $discount->id_diskon,
-                'start_date_saved' => $discount->tanggal_mulai,
-                'end_date_saved' => $discount->tanggal_selesai
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -124,15 +96,10 @@ class DiscountController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            
-            Log::error('Discount Store Error:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
+            Log::error('Discount Store Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat diskon: ' . $e->getMessage()
+                'message' => 'Gagal membuat diskon'
             ], 400);
         }
     }
@@ -141,20 +108,12 @@ class DiscountController extends Controller
     {
         $discount = Discount::findOrFail($id);
 
-        Log::info('Discount Update Request:', [
-            'id' => $id,
-            'all_data' => $request->all(),
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date
-        ]);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:percentage,fixed',
             'value' => 'required|integer|min:0',
-            'target_type' => 'required|in:product,tag',
             'target_ids' => 'required|array|min:1',
-            'target_ids.*' => 'required|integer',
+            'target_ids.*' => 'required|integer|exists:produk,id_produk',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'is_active' => 'boolean',
@@ -166,43 +125,21 @@ class DiscountController extends Controller
             $startDate = Carbon::parse($validated['start_date']);
             $endDate = Carbon::parse($validated['end_date']);
             
-            Log::info('Parsed Dates:', [
-                'start_date_parsed' => $startDate->toDateTimeString(),
-                'end_date_parsed' => $endDate->toDateTimeString()
-            ]);
-            
             $discount->update([
                 'nama_diskon' => $validated['name'],
                 'tipe_diskon' => $validated['type'] === 'percentage' ? 'persen' : 'nominal',
                 'nilai_diskon' => $validated['value'],
-                'target' => $validated['target_type'] === 'product' ? 'produk' : 'tag',
+                'target' => 'produk',
                 'tanggal_mulai' => $startDate,
                 'tanggal_selesai' => $endDate,
                 'is_active' => $validated['is_active'] ?? $discount->is_active,
                 'auto_active' => $validated['auto_activate'] ?? $discount->auto_active
             ]);
 
-            if ($validated['target_type'] === 'product') {
-                $request->validate([
-                    'target_ids.*' => 'exists:produk,id_produk',
-                ]);
-                $discount->products()->sync($validated['target_ids']);
-                $discount->tags()->detach();
-            } else {
-                $request->validate([
-                    'target_ids.*' => 'exists:tag,id_tag',
-                ]);
-                $discount->tags()->sync($validated['target_ids']);
-                $discount->products()->detach();
-            }
+            $discount->products()->sync($validated['target_ids']);
+            $discount->tags()->detach();
 
             DB::commit();
-
-            Log::info('Discount Updated Successfully:', [
-                'id' => $discount->id_diskon,
-                'start_date_saved' => $discount->fresh()->tanggal_mulai,
-                'end_date_saved' => $discount->fresh()->tanggal_selesai
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -212,15 +149,10 @@ class DiscountController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            
-            Log::error('Discount Update Error:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
+            Log::error('Discount Update Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengupdate diskon: ' . $e->getMessage()
+                'message' => 'Gagal mengupdate diskon'
             ], 400);
         }
     }
@@ -249,11 +181,8 @@ class DiscountController extends Controller
     {
         try {
             $discount = Discount::findOrFail($id);
-            
-            // Detach relationships before delete
             $discount->products()->detach();
             $discount->tags()->detach();
-            
             $discount->delete();
 
             return response()->json([
@@ -263,7 +192,7 @@ class DiscountController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menghapus diskon: ' . $e->getMessage()
+                'message' => 'Gagal menghapus diskon'
             ], 400);
         }
     }
@@ -307,6 +236,10 @@ class DiscountController extends Controller
             'id' => $product->id_produk,
             'name' => $product->nama_produk,
             'price' => (int) ($defaultUnit?->harga_jual ?? 0),
+            'tags' => $product->tags->map(fn($t) => [
+                'id' => $t->id_tag,
+                'name' => $t->nama_tag
+            ])->values(),
         ];
     }
 }

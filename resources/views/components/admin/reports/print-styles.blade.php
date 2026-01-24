@@ -38,6 +38,8 @@
         canvas {
             max-width: 100% !important;
             height: auto !important;
+            display: block !important;
+            margin: 0 auto !important;
         }
         
         .grid { display: grid !important; }

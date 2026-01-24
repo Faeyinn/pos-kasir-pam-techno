@@ -30,7 +30,7 @@ class DiscountAnalyticsController extends Controller
                 ->whereBetween('created_at', [$startDate, $endDate]);
 
             $withoutTrx = (clone $trxBaseQuery)
-                ->where('diskon', '=', 0)
+                ->whereNull('id_diskon')
                 ->selectRaw('
                     COUNT(*) as transaction_count,
                     AVG(total_transaksi) as avg_transaction,
@@ -40,7 +40,7 @@ class DiscountAnalyticsController extends Controller
                 ->first();
 
             $withTrx = (clone $trxBaseQuery)
-                ->where('diskon', '>', 0)
+                ->whereNotNull('id_diskon')
                 ->selectRaw('
                     COUNT(*) as transaction_count,
                     AVG(total_transaksi) as avg_transaction,
@@ -52,13 +52,13 @@ class DiscountAnalyticsController extends Controller
             $withoutRawProfit = DB::table('detail_transaksi')
                 ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
                 ->whereBetween('transaksi.created_at', [$startDate, $endDate])
-                ->where('transaksi.diskon', '=', 0)
+                ->whereNull('transaksi.id_diskon')
                 ->sum(DB::raw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah'));
 
             $withRawProfit = DB::table('detail_transaksi')
                 ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
                 ->whereBetween('transaksi.created_at', [$startDate, $endDate])
-                ->where('transaksi.diskon', '>', 0)
+                ->whereNotNull('transaksi.id_diskon')
                 ->sum(DB::raw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah'));
 
             $withoutDiscount = (object) [

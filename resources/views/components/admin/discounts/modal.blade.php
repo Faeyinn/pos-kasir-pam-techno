@@ -78,133 +78,89 @@
                     </div>
                 </div>
 
-                {{-- Target Type --}}
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">
-                        Berlaku Untuk <span class="text-red-500">*</span>
-                    </label>
-                    <div class="flex gap-4">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input 
-                                type="radio" 
-                                x-model="formData.target_type" 
-                                value="product"
-                                class="text-indigo-600 focus:ring-indigo-500"
-                            >
-                            <span class="text-sm text-slate-700">Produk Spesifik</span>
+                {{-- Unified Product Selection with Smart Search --}}
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm font-semibold text-slate-700">
+                            Pilih Produk Target <span class="text-red-500">*</span>
                         </label>
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input 
-                                type="radio" 
-                                x-model="formData.target_type" 
-                                value="tag"
-                                class="text-indigo-600 focus:ring-indigo-500"
-                            >
-                            <span class="text-sm text-slate-700">Berdasarkan Tag</span>
-                        </label>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold" x-text="formData.target_ids.length + ' dipilih'"></span>
                     </div>
-                </div>
 
-                {{-- Product Selection --}}
-                <div x-show="formData.target_type === 'product'">
-                    <label class="block text-sm font-medium text-slate-700 mb-2">
-                        Pilih Produk <span class="text-red-500">*</span>
-                    </label>
-                    
-                    {{-- Search Box + Pilih Semua + Reset --}}
-                    <div class="mb-3 flex gap-2">
-                        <div class="relative w-[62%]">
+                    {{-- Unified Search Box + Selection Controls (60/40 Split) --}}
+                    <div class="flex gap-2">
+                        <div class="relative w-[60%]">
                             <input 
                                 type="text" 
                                 x-model="productSearch"
-                                placeholder="Cari produk..."
-                                class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="Cari nama atau tag (ex: Sembako)..."
+                                class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                             >
-                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                            <div class="absolute left-3 top-2.5 text-slate-400">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </div>
                         </div>
-                        <button
-                            type="button"
-                            @click="selectAllProducts()"
-                            class="flex-1 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
-                        >
-                            Pilih Semua
-                        </button>
-                        <button
-                            type="button"
-                            @click="formData.target_ids = []"
-                            class="flex-1 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
-                        >
-                            Reset
-                        </button>
-                    </div>
-                    
-                    <div class="border border-slate-300 rounded-lg p-3 max-h-48 overflow-y-auto">
-                        @foreach($products as $product)
-                        <label 
-                            class="flex items-center space-x-2 py-2 hover:bg-slate-50 px-2 rounded cursor-pointer"
-                            x-show="'{{ strtolower((string) data_get($product, 'name')) }}'.includes(productSearch.toLowerCase())"
-                        >
-                            <input 
-                                type="checkbox" 
-                                :value="{{ (int) data_get($product, 'id') }}" 
-                                x-model="formData.target_ids"
-                                class="rounded text-indigo-600 focus:ring-indigo-500"
+                        <div class="flex flex-1 gap-2">
+                            <button
+                                type="button"
+                                @click="selectAllFiltered()"
+                                class="flex-1 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-xs font-bold uppercase tracking-tight"
                             >
-                            <span class="text-sm text-slate-700">{{ data_get($product, 'name') }}</span>
-                            <span class="text-xs text-slate-400">(Rp {{ number_format((int) data_get($product, 'price', 0), 0, ',', '.') }})</span>
-                        </label>
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- Tag Selection --}}
-                <div x-show="formData.target_type === 'tag'">
-                    <label class="block text-sm font-medium text-slate-700 mb-2">
-                        Pilih Tag <span class="text-red-500">*</span>
-                    </label>
-                    
-                    {{-- Search Box + Pilih Semua + Reset --}}
-                    <div class="mb-3 grid grid-cols-5 gap-2">
-                        <div class="relative col-span-3">
-                            <input 
-                                type="text" 
-                                x-model="tagSearch"
-                                placeholder="Cari tag..."
-                                class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                Semua
+                            </button>
+                            <button
+                                type="button"
+                                @click="formData.target_ids = []"
+                                class="flex-1 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-xs font-bold uppercase tracking-tight"
                             >
-                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                                Reset
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            @click="selectAllTags()"
-                            class="flex-1 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
-                        >
-                            Pilih Semua
-                        </button>
-                        <button
-                            type="button"
-                            @click="formData.target_ids = []"
-                            class="flex-1 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
-                        >
-                            Reset
-                        </button>
                     </div>
                     
-                    <div class="border border-slate-300 rounded-lg p-3 max-h-48 overflow-y-auto">
-                        @foreach($tags as $tag)
-                        <label 
-                            class="flex items-center space-x-2 py-2 hover:bg-slate-50 px-2 rounded cursor-pointer"
-                            x-show="'{{ strtolower((string) data_get($tag, 'name')) }}'.includes(tagSearch.toLowerCase())"
-                        >
-                            <input 
-                                type="checkbox" 
-                                :value="{{ (int) data_get($tag, 'id') }}" 
-                                x-model="formData.target_ids"
-                                class="rounded text-indigo-600 focus:ring-indigo-500"
+                    <div 
+                        class="border border-slate-200 rounded-xl max-h-44 overflow-y-auto custom-scrollbar shadow-inner bg-slate-50/50"
+                        style="max-height: 180px;"
+                    >
+                        <template x-for="product in filteredProducts" :key="product.id">
+                            <label 
+                                class="flex items-center space-x-3 py-3 px-4 hover:bg-white border-b border-slate-100 last:border-0 cursor-pointer transition-colors group"
                             >
-                            <span class="text-sm text-slate-700">{{ data_get($tag, 'name') }}</span>
-                        </label>
-                        @endforeach
+                                <input 
+                                    type="checkbox" 
+                                    :value="product.id" 
+                                    x-model="formData.target_ids"
+                                    class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                >
+                                <div class="flex flex-1 items-center justify-between min-w-0">
+                                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                                        <span class="text-sm font-bold text-slate-800 truncate" x-text="product.name"></span>
+                                        <span class="text-slate-300 text-xs">•</span>
+                                        <span class="text-sm font-black text-indigo-600" x-text="'Rp ' + formatNumber(product.price)"></span>
+                                        
+                                        <template x-if="product.tags && product.tags.length > 0">
+                                            <div class="flex items-center gap-1 min-w-0">
+                                                <span class="text-slate-300 text-xs">•</span>
+                                                <div class="flex gap-1 overflow-hidden">
+                                                    <template x-for="(tag, index) in product.tags" :key="tag.id">
+                                                        <span class="text-[10px] text-slate-500 font-medium" x-text="tag.name + (index < product.tags.length - 1 ? ',' : '')"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <template x-if="formData.target_ids.includes(product.id)">
+                                        <div class="text-green-500 shrink-0">
+                                            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                        </div>
+                                    </template>
+                                </div>
+                            </label>
+                        </template>
+                        
+                        <div x-show="filteredProducts.length === 0" class="py-12 text-center text-slate-500">
+                             <p class="text-sm">Produk tidak ditemukan</p>
+                        </div>
                     </div>
                 </div>
 
@@ -268,43 +224,20 @@
                     </div>
                 </div>
 
-                {{-- Status & Auto-Activation Toggles --}}
-                <div class="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col">
-                            <label class="text-sm font-semibold text-slate-700">
-                                Status Manual
-                            </label>
-                            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Master Switch</span>
-                        </div>
-                        
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                x-model="formData.is_active" 
-                                class="sr-only peer"
-                            >
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                        </label>
-                    </div>
-
-                    <div class="flex items-center justify-between border-l border-slate-200 pl-6">
-                        <div class="flex flex-col">
-                            <label class="text-sm font-semibold text-slate-700">
-                                Aktivasi Jadwal
-                            </label>
-                            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Auto-Schedule</span>
-                        </div>
-                        
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                x-model="formData.auto_activate" 
-                                class="sr-only peer"
-                            >
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                        </label>
-                    </div>
+                {{-- Simple Auto-Activation Toggle - Aligned Right --}}
+                <div class="flex items-center justify-end gap-3 py-2 px-1">
+                    <label class="text-sm font-medium text-slate-700">
+                        Aktivasi Otomatis
+                    </label>
+                    
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            x-model="formData.auto_activate" 
+                            class="sr-only peer"
+                        >
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
                 </div>
             </div>
 

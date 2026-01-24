@@ -115,15 +115,18 @@
 
     {{-- Empty State (Show if no transactions with discount) --}}
     <template x-if="!(comparison.with_discount?.transaction_count > 0)">
-        <div class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-12 flex flex-col items-center justify-center text-center">
-            <div class="w-20 h-20 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center justify-center mb-6">
+        <div 
+            class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center"
+            style="margin-top: 80px; padding: 15px 40px;"
+        >
+            <div class="w-20 h-20 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center justify-center mb-8">
                 <i data-lucide="bar-chart-2" class="w-10 h-10 text-slate-300"></i>
             </div>
             <h3 class="text-xl font-black text-slate-400 uppercase tracking-tight">Fitur Analisis Belum Tersedia</h3>
-            <p class="text-slate-400 mt-2 max-w-sm font-medium">
-                Fitur ini belum tersedia karena tidak ada diskon yang tersedia selama 30 tahun terakhir dalam data transaksi Anda.
+            <p class="text-slate-400 mt-4 max-w-sm font-medium leading-relaxed">
+                Fitur ini belum tersedia karena tidak ada transaksi dengan diskon yang ditemukan selama 30 hari terakhir dalam data Anda.
             </p>
-            <div class="mt-8 px-6 py-2 bg-slate-200/50 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-300/30">
+            <div class="mt-12 px-8 py-3 bg-slate-200/50 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-300/30">
                 Menunggu Data Transaksi Ber-Diskon
             </div>
         </div>
