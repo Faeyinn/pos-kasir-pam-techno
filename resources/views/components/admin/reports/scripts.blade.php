@@ -280,6 +280,25 @@ document.addEventListener('alpine:init', () => {
         },
         formatDateShort(str) {
             return new Date(str).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        },
+        getActiveFiltersLabel() {
+            const start = new Date(this.filters.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            const end = new Date(this.filters.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            
+            let categoryLabel = 'Semua Kategori';
+            if (this.filters.tags.length > 0) {
+                categoryLabel = this.availableTags
+                    .filter(t => this.filters.tags.includes(t.id.toString()) || this.filters.tags.includes(t.id))
+                    .map(t => t.name)
+                    .join(', ');
+            }
+
+            let paymentLabel = 'Semua Metode';
+            if (this.filters.payment_method !== 'all') {
+                paymentLabel = this.filters.payment_method.charAt(0).toUpperCase() + this.filters.payment_method.slice(1);
+            }
+
+            return `${start} - ${end} • ${categoryLabel} • ${paymentLabel}`;
         }
     }));
 });

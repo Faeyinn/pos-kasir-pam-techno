@@ -32,6 +32,7 @@
                 Analisis Intensitas Transaksi (24 Jam)
             </h3>
             <p class="text-[11px] text-slate-400 font-medium tracking-wide">Pola keramaian berdasarkan hari dan jam sepanjang waktu</p>
+            <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mt-1" x-text="getActiveFiltersLabel()"></p>
         </div>
         <div class="hidden sm:block text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
             TOTAL: <span class="text-slate-800" x-text="heatmapData.total_transactions || 0"></span> DATA

@@ -1,3 +1,11 @@
+<div class="mb-6">
+    <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+        <i data-lucide="filter" class="w-3 h-3"></i>
+        <span>Filter Aktif</span>
+    </div>
+    <div class="text-sm font-semibold text-slate-600 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm inline-block" x-text="getActiveFiltersLabel()"></div>
+</div>
+
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
     {{-- Total Sales --}}
     <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
