@@ -118,9 +118,18 @@ class TransactionSeeder extends Seeder
                     continue;
                 }
 
-                $discountData = $discountService->findApplicableDiscount(collect($cartItemsForDiscount));
-                $discountAmount = (int) ($discountData['amount'] ?? 0);
-                $discountAmount = min($discountAmount, $totalBelanja);
+                // Intentionally create a mix: 50% with discounts, 50% without
+                // This ensures we have baseline data for comparison analytics
+                $shouldApplyDiscount = rand(1, 100) <= 50;
+
+                $discountData = ['discount' => null, 'amount' => 0];
+                $discountAmount = 0;
+
+                if ($shouldApplyDiscount) {
+                    $discountData = $discountService->findApplicableDiscount(collect($cartItemsForDiscount));
+                    $discountAmount = (int) ($discountData['amount'] ?? 0);
+                    $discountAmount = min($discountAmount, $totalBelanja);
+                }
 
                 $totalTransaksi = $totalBelanja - $discountAmount;
 

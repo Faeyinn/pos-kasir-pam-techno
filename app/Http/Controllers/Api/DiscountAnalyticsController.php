@@ -109,12 +109,19 @@ class DiscountAnalyticsController extends Controller
                 ->selectRaw('
                     diskon.id_diskon,
                     diskon.nama_diskon,
+                    diskon.tanggal_mulai,
+                    diskon.tanggal_selesai,
                     COUNT(*) as usage_count,
                     SUM(transaksi.diskon) as total_discount_given,
                     SUM(transaksi.total_transaksi) as total_revenue
                 ')
-                ->groupBy('diskon.id_diskon', 'diskon.nama_diskon')
+                ->groupBy('diskon.id_diskon', 'diskon.nama_diskon', 'diskon.tanggal_mulai', 'diskon.tanggal_selesai')
                 ->get();
+
+            Log::info('Discount Performance Query Result', [
+                'count' => $performanceData->count(),
+                'data' => $performanceData->toArray()
+            ]);
 
             $performance = $performanceData->map(function($p) use ($startDate, $endDate) {
                 // Calculate raw profit for transactions using this specific discount
@@ -133,6 +140,8 @@ class DiscountAnalyticsController extends Controller
 
                 return [
                     'name' => $p->nama_diskon,
+                    'start_date' => $p->tanggal_mulai,
+                    'end_date' => $p->tanggal_selesai,
                     'usage_count' => (int) $p->usage_count,
                     'total_discount_given' => (int) $p->total_discount_given,
                     'total_revenue' => (int) $p->total_revenue,

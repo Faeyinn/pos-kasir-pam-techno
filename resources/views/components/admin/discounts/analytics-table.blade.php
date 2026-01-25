@@ -15,6 +15,9 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase">
                         Nama Diskon
                     </th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-slate-700 uppercase">
+                        Periode Berlaku
+                    </th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-slate-700 uppercase">
                         Dipakai
                     </th>
@@ -33,13 +36,15 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-                <template x-for="discount in performance" :key="discount.id">
+                <template x-for="discount in performance" :key="discount.name">
                     <tr class="hover:bg-slate-50">
                         <td class="px-6 py-4">
                             <div class="font-medium text-slate-900" x-text="discount.name"></div>
-                            <div class="text-xs text-slate-500" 
-                                 x-text="discount.type === 'percentage' ? discount.value + '%' : 'Rp ' + formatNumber(discount.value)">
-                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="text-xs text-slate-600" x-text="formatDate(discount.start_date)"></div>
+                            <div class="text-xs text-slate-400">sampai</div>
+                            <div class="text-xs text-slate-600" x-text="formatDate(discount.end_date)"></div>
                         </td>
                         <td class="px-6 py-4 text-right text-slate-600"
                             x-text="discount.usage_count + 'x'">
@@ -67,7 +72,7 @@
 
                 {{-- Empty State --}}
                 <tr x-show="performance.length === 0">
-                    <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                    <td colspan="7" class="px-6 py-12 text-center text-slate-500">
                         <i data-lucide="bar-chart-3" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
                         <p>Belum ada data penggunaan diskon</p>
                         <p class="text-sm mt-1">Data akan muncul setelah ada transaksi dengan diskon</p>

@@ -2,9 +2,12 @@
     {{-- Main Comparison Content (Only show if there are transactions with discount) --}}
     <template x-if="comparison.with_discount?.transaction_count > 0">
         <div class="bg-gradient-to-br from-slate-50 to-white rounded-xl border-2 border-slate-200 p-8 shadow-sm">
-            <h3 class="text-lg font-semibold text-slate-900 mb-6 text-center">
-                Perbandingan Performa Penjualan (30 Hari Terakhir)
-            </h3>
+            <div class="text-center mb-6">
+                <h3 class="text-lg font-semibold text-slate-900">
+                    Perbandingan Performa Penjualan (30 Hari Terakhir)
+                </h3>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1" x-text="getDateRangeLabel()"></p>
+            </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {{-- WITHOUT Discount Card --}}

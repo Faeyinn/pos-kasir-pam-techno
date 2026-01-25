@@ -9,6 +9,7 @@
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                     Data Performa 30 Hari Terakhir • Real-time
                 </p>
+                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mt-1" x-text="getDateRangeLabel()"></p>
             </div>
         </div>
     </div>

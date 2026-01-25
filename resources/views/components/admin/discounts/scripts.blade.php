@@ -212,6 +212,12 @@ document.addEventListener('alpine:init', () => {
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         },
 
+        formatDate(dateTimeString) {
+            if (!dateTimeString) return '-';
+            const date = new Date(dateTimeString);
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        },
+
         formatNumber(num) {
             return new Intl.NumberFormat('id-ID').format(num);
         },
@@ -268,6 +274,18 @@ document.addEventListener('alpine:init', () => {
 
         selectAllTags() {
             this.formData.target_ids = this.tags.map(t => t.id);
+        },
+
+        getDateRangeLabel() {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(start.getDate() - 30);
+            
+            const formatDate = (date) => {
+                return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            };
+            
+            return `${formatDate(start)} - ${formatDate(end)}`;
         }
     }));
 });
