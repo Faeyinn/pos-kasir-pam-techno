@@ -1,4 +1,4 @@
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden avoid-page-break">
     <div class="p-6 border-b border-slate-200">
         <h3 class="text-lg font-semibold text-slate-900">
             Efektivitas Setiap Diskon

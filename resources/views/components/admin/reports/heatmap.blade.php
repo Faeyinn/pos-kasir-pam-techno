@@ -1,4 +1,4 @@
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 print:border-none print:shadow-none">
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 print:border-none print:shadow-none avoid-page-break">
     <style>
         @media print {
             .heatmap-cell {
@@ -45,7 +45,7 @@
             <!-- X-Axis Labels (Time) -->
             <div class="flex items-center mb-2">
                 <div class="w-14 flex-shrink-0"></div> <!-- Spacer for Y-axis labels -->
-                <div class="flex-1 flex justify-between">
+                <div class="flex-1 flex justify-between heatmap-x-labels">
                     <template x-for="h in 24" :key="h">
                         <div class="w-full text-center border-l border-slate-50/50">
                             <span class="text-[8px] font-bold text-slate-400" x-text="(h-1).toString().padStart(2, '0') + ':00'"></span>
@@ -61,7 +61,7 @@
                     <div class="w-14 flex-shrink-0 text-[10px] font-black text-slate-400 uppercase pr-4 text-right group-hover/row:text-indigo-500 transition-colors" x-text="dayName"></div>
                     
                     <!-- Hour Cells (24 hours: 0-23) -->
-                    <div class="flex-1 flex gap-1">
+                    <div class="flex-1 flex gap-1 heatmap-cell-container">
                         <template x-for="h in 24" :key="h">
                             <div 
                                 class="heatmap-cell flex-1 aspect-square rounded-[2px] border border-slate-100/30 cursor-pointer transition-all hover:ring-2 hover:ring-indigo-400 hover:scale-125 hover:z-10 relative group"

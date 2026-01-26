@@ -17,7 +17,7 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div class="flex h-screen">
-        <div class="w-64 bg-slate-900 text-white flex flex-col transition-all duration-300">
+        <div class="sidebar no-print w-64 bg-slate-900 text-white flex flex-col transition-all duration-300">
             <div class="p-6 border-b border-slate-800">
                 <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Pam Admin</h1>
             </div>
@@ -71,7 +71,7 @@
         </div>
 
         <div class="flex-1 flex flex-col overflow-hidden">
-           <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8">
+           <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 no-print">
                <h2 class="text-lg font-semibold text-slate-800">@yield('header', 'Admin Area')</h2>
                <div class="flex items-center gap-4">
                    <div class="text-right">

@@ -1,7 +1,7 @@
 <div class="relative min-h-[400px]">
     {{-- Main Comparison Content (Only show if there are transactions with discount) --}}
     <template x-if="comparison.with_discount?.transaction_count > 0">
-        <div class="bg-gradient-to-br from-slate-50 to-white rounded-xl border-2 border-slate-200 p-8 shadow-sm">
+        <div class="bg-gradient-to-br from-slate-50 to-white rounded-xl border-2 border-slate-200 p-8 shadow-sm avoid-page-break">
             <div class="text-center mb-6">
                 <h3 class="text-lg font-semibold text-slate-900">
                     Perbandingan Performa Penjualan (30 Hari Terakhir)
@@ -11,7 +11,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {{-- WITHOUT Discount Card --}}
-                <div class="bg-white border-2 border-red-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="bg-white border-2 border-red-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow avoid-page-break">
                     <div class="flex items-center justify-between mb-4">
                         <h4 class="font-semibold text-slate-900">Tanpa Diskon</h4>
                         <span class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
@@ -54,7 +54,7 @@
                 </div>
 
                 {{-- WITH Discount Card --}}
-                <div class="bg-white border-2 border-green-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="bg-white border-2 border-green-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow avoid-page-break">
                     <div class="flex items-center justify-between mb-4">
                         <h4 class="font-semibold text-slate-900">Dengan Diskon</h4>
                         <span class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -102,7 +102,7 @@
             </div>
 
             {{-- Conclusion Box --}}
-            <div class="mt-6 p-5 bg-blue-50 border border-blue-200 rounded-xl shadow-inner">
+            <div class="mt-6 p-5 bg-blue-50 border border-blue-200 rounded-xl shadow-inner avoid-page-break">
                 <div class="flex items-start gap-4">
                     <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
                         <i data-lucide="lightbulb" class="w-6 h-6"></i>

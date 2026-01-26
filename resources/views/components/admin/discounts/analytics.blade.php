@@ -1,7 +1,7 @@
 <div class="space-y-6">
     <div class="mb-4">
         <div class="flex items-center gap-3">
-            <div class="w-2 h-8 bg-indigo-500 rounded-full"></div>
+            <div class="w-2 h-8 bg-indigo-500 rounded-full no-print"></div>
             <div>
                 <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight">
                     Analisis Efektivitas Diskon

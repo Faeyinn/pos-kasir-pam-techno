@@ -39,12 +39,6 @@
         <h4 class="font-bold text-gray-900 text-sm sm:text-base mb-2 line-clamp-2 leading-tight" x-text="product.name"></h4>
 
         <div class="flex flex-wrap gap-1.5 mb-3">
-            <template x-if="product.hasDiscount">
-                <span 
-                    class="px-2.5 py-1 rounded-md text-[10px] font-black bg-red-50 text-red-600 border border-red-200 uppercase tracking-tighter"
-                    x-text="product.discount.name"
-                ></span>
-            </template>
             <template x-for="tag in (product.tags || [])" :key="tag.id">
                  <span 
                     class="px-2.5 py-1 rounded-md text-[10px] font-bold border" 

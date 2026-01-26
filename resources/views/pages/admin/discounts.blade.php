@@ -22,7 +22,7 @@
     {{-- Report Section (Visible on Print) --}}
     <div class="border-t pt-3 pb-8 print:border-none print:pt-0">
         {{-- PDF Header (Only visible on Print) --}}
-        <div class="hidden print:block mb-8 border-b-2 border-slate-900 pb-6">
+        <div class="hidden print:block mb-10 border-b-4 border-slate-900 pb-8">
             <div class="flex justify-between items-end">
                 <div>
                     <h1 class="text-3xl font-black text-slate-900 mb-1">LAPORAN EFEKTIVITAS DISKON</h1>

@@ -1,4 +1,4 @@
-<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 no-print">
     {{-- Filter Row --}}
     <div class="flex items-center justify-between gap-4">
         {{-- Left Group: Filters --}}
@@ -56,7 +56,7 @@
             {{-- Transaction Type Filter --}}
             <select 
                 x-model="filters.transaction_type"
-                class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 bg-white min-w-[150px]"
+                class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 bg-white w-36"
             >
                 <option value="all">Semua Tipe</option>
                 <option value="eceran">Eceran (Retail)</option>
@@ -68,7 +68,7 @@
                 <button 
                     @click="open = !open" 
                     @click.outside="open = false"
-                    class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white flex items-center gap-2 hover:bg-slate-50 w-48 justify-between"
+                    class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white flex items-center gap-2 hover:bg-slate-50 w-40 justify-between"
                 >
                     <span class="truncate" x-text="selectedTagsLabel"></span>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
@@ -94,13 +94,33 @@
             </div>
         </div>
 
-        {{-- Right Group: Apply Button --}}
-        <button 
-            @click="applyFilters"
-            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-all shadow-sm hover:shadow-indigo-200 active:scale-95 flex items-center gap-2 flex-shrink-0"
-        >
-            <i data-lucide="filter" class="w-4 h-4"></i>
-            Terapkan
-        </button>
+        {{-- Right Group: Actions --}}
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button 
+                @click="applyFilters"
+                class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-all shadow-sm hover:shadow-indigo-200 active:scale-95 flex items-center gap-2"
+            >
+                <i data-lucide="filter" class="w-4 h-4"></i>
+                Terapkan
+            </button>
+            
+            <div class="h-8 w-px bg-slate-200 mx-1 no-print"></div>
+
+            <button 
+                @click="exportCSV"
+                class="p-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all shadow-sm active:scale-95 no-print"
+                title="Export Excel"
+            >
+                <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+            </button>
+            
+            <button 
+                @click="printReport"
+                class="p-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-lg transition-all shadow-sm active:scale-95 no-print"
+                title="Export PDF"
+            >
+                <i data-lucide="printer" class="w-5 h-5"></i>
+            </button>
+        </div>
     </div>
 </div>
