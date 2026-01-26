@@ -1,9 +1,21 @@
-<div class="mb-6">
+{{-- Filter Aktif - Screen Version (Hidden on Print) --}}
+<div class="mb-6 no-print">
     <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
         <i data-lucide="filter" class="w-3 h-3"></i>
         <span>Filter Aktif</span>
     </div>
     <div class="text-sm font-semibold text-slate-600 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm inline-block" x-text="getActiveFiltersLabel()"></div>
+</div>
+
+{{-- Filter Aktif - Print Version (Only Visible on PDF) --}}
+<div class="hidden print:block mb-6 bg-slate-50 border-2 border-slate-300 rounded-lg p-4">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i data-lucide="filter" class="w-4 h-4 text-indigo-600"></i>
+        </div>
+        <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight flex-shrink-0">Filter Aktif</h3>
+        <div class="text-sm font-semibold text-slate-700" x-text="getActiveFiltersLabel()"></div>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">

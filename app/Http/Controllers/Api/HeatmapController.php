@@ -28,9 +28,24 @@ class HeatmapController extends Controller
                 ? Carbon::parse($request->end_date)
                 : Carbon::now();
 
+            // Build query with filters
+            $query = Transaction::whereBetween('created_at', [$startDate, $endDate]);
+
+            // Filter by transaction type
+            if ($request->transaction_type && $request->transaction_type !== 'all') {
+                $query->where('jenis_transaksi', $request->transaction_type);
+            }
+
+            // Filter by tags (categories)
+            if ($request->tags) {
+                $tagIds = explode(',', $request->tags);
+                $query->whereHas('items.product.tags', function($q) use ($tagIds) {
+                    $q->whereIn('tag.id_tag', $tagIds);
+                });
+            }
+
             // Query: Group by day of week (0=Sunday, 6=Saturday) and hour (0-23)
-            $data = Transaction::whereBetween('created_at', [$startDate, $endDate])
-                ->select(
+            $data = $query->select(
                     DB::raw('DAYOFWEEK(created_at) - 1 as day_of_week'),
                     DB::raw('HOUR(created_at) as hour'),
                     DB::raw('COUNT(*) as transaction_count')

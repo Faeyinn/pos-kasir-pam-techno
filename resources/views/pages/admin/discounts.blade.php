@@ -20,7 +20,7 @@
     </div>
 
     {{-- Report Section (Visible on Print) --}}
-    <div class="border-t pt-12 pb-8 print:border-none print:pt-0">
+    <div class="border-t pt-3 pb-8 print:border-none print:pt-0">
         {{-- PDF Header (Only visible on Print) --}}
         <div class="hidden print:block mb-8 border-b-2 border-slate-900 pb-6">
             <div class="flex justify-between items-end">

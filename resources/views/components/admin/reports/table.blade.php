@@ -1,4 +1,4 @@
-<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden no-print">
     <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
             <h4 class="text-lg font-bold text-slate-900">Laporan Detail Penjualan</h4>
