@@ -10,7 +10,7 @@ document.addEventListener('alpine:init', () => {
         filters: {
             start_date: new Date().toISOString().split('T')[0].slice(0, 8) + '01',
             end_date: new Date().toISOString().split('T')[0],
-            payment_method: 'all',
+            transaction_type: 'all',
             tags: [],
             search: ''
         },
@@ -61,8 +61,8 @@ document.addEventListener('alpine:init', () => {
             const params = new URLSearchParams({
                 start_date: this.filters.start_date,
                 end_date: this.filters.end_date,
-                // Prefer the new, clearer name
-                payment_method: this.filters.payment_method,
+                // Transaction Type Filter
+                transaction_type: this.filters.transaction_type,
                 search: this.filters.search
             });
             if (this.filters.tags.length > 0) {
@@ -293,12 +293,12 @@ document.addEventListener('alpine:init', () => {
                     .join(', ');
             }
 
-            let paymentLabel = 'Semua Metode';
-            if (this.filters.payment_method !== 'all') {
-                paymentLabel = this.filters.payment_method.charAt(0).toUpperCase() + this.filters.payment_method.slice(1);
+            let typeLabel = 'Semua Tipe';
+            if (this.filters.transaction_type !== 'all') {
+                typeLabel = this.filters.transaction_type === 'eceran' ? 'Eceran' : 'Grosir';
             }
 
-            return `${start} - ${end} • ${categoryLabel} • ${paymentLabel}`;
+            return `${start} - ${end} • ${categoryLabel} • ${typeLabel}`;
         }
     }));
 });

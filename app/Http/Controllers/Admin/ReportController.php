@@ -16,16 +16,11 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
-    private function getPaymentMethod(Request $request): ?string
+    private function getTransactionType(Request $request): ?string
     {
-        $method = $request->input('payment_method');
-        if (is_string($method) && $method !== '') {
-            return $method;
-        }
-
-        $legacy = $request->input('payment_type');
-        if (is_string($legacy) && $legacy !== '') {
-            return $legacy;
+        $type = $request->input('transaction_type');
+        if (is_string($type) && $type !== '') {
+            return $type;
         }
 
         return null;
@@ -55,14 +50,14 @@ class ReportController extends Controller
     {
         try {
             $dates = $this->getDateRange($request);
-            $paymentMethod = $this->getPaymentMethod($request);
+            $transactionType = $this->getTransactionType($request);
             
             // Base transaction query with filters
             $transactionQuery = Transaction::query()
                 ->whereBetween('created_at', $dates);
             
-            if ($paymentMethod && $paymentMethod !== 'all') {
-                $transactionQuery->where('metode_pembayaran', $paymentMethod);
+            if ($transactionType && $transactionType !== 'all') {
+                $transactionQuery->where('jenis_transaksi', $transactionType);
             }
 
             // If tags are present, we calculate sales and transactions based on those tags
@@ -74,8 +69,8 @@ class ReportController extends Controller
                     ->join('produk_tag', 'detail_transaksi.id_produk', '=', 'produk_tag.id_produk')
                     ->whereBetween('transaksi.created_at', $dates)
                     ->whereIn('produk_tag.id_tag', $tagIds)
-                    ->when($paymentMethod && $paymentMethod !== 'all', function($q) use ($paymentMethod) {
-                        return $q->where('transaksi.metode_pembayaran', $paymentMethod);
+                    ->when($transactionType && $transactionType !== 'all', function($q) use ($transactionType) {
+                        return $q->where('transaksi.jenis_transaksi', $transactionType);
                     })
                     ->sum('detail_transaksi.subtotal');
 
@@ -84,8 +79,8 @@ class ReportController extends Controller
                     ->join('produk_tag', 'detail_transaksi.id_produk', '=', 'produk_tag.id_produk')
                     ->whereBetween('transaksi.created_at', $dates)
                     ->whereIn('produk_tag.id_tag', $tagIds)
-                    ->when($paymentMethod && $paymentMethod !== 'all', function($q) use ($paymentMethod) {
-                        return $q->where('transaksi.metode_pembayaran', $paymentMethod);
+                    ->when($transactionType && $transactionType !== 'all', function($q) use ($transactionType) {
+                        return $q->where('transaksi.jenis_transaksi', $transactionType);
                     })
                     ->distinct('transaksi.id_transaksi')
                     ->count('transaksi.id_transaksi');
@@ -102,8 +97,8 @@ class ReportController extends Controller
                 ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi')
                 ->whereBetween('transaksi.created_at', $dates);
 
-            if ($paymentMethod && $paymentMethod !== 'all') {
-                $profitQuery->where('transaksi.metode_pembayaran', $paymentMethod);
+            if ($transactionType && $transactionType !== 'all') {
+                $profitQuery->where('transaksi.jenis_transaksi', $transactionType);
             }
 
             // Tag filter for profit
@@ -147,7 +142,7 @@ class ReportController extends Controller
     {
         try {
             $dates = $this->getDateRange($request);
-            $paymentMethod = $this->getPaymentMethod($request);
+            $transactionType = $this->getTransactionType($request);
 
             // 1. Sales vs Profit Trend
             $trendQuery = TransactionItem::selectRaw('
@@ -160,8 +155,8 @@ class ReportController extends Controller
                 ->groupBy(DB::raw('DATE(transaksi.created_at)'))
                 ->orderBy('date');
 
-            if ($paymentMethod && $paymentMethod !== 'all') {
-                $trendQuery->where('transaksi.metode_pembayaran', $paymentMethod);
+            if ($transactionType && $transactionType !== 'all') {
+                $trendQuery->where('transaksi.jenis_transaksi', $transactionType);
             }
 
             if ($request->tags) {
@@ -189,8 +184,8 @@ class ReportController extends Controller
                 ->orderByDesc('profit')
                 ->limit(10);
 
-            if ($paymentMethod && $paymentMethod !== 'all') {
-                $tagProfitQuery->where('transaksi.metode_pembayaran', $paymentMethod);
+            if ($transactionType && $transactionType !== 'all') {
+                $tagProfitQuery->where('transaksi.jenis_transaksi', $transactionType);
             }
 
             if ($request->tags) {
@@ -204,8 +199,8 @@ class ReportController extends Controller
             $trxTrendQuery = Transaction::selectRaw('DATE(transaksi.created_at) as date, COUNT(DISTINCT transaksi.id_transaksi) as count')
                 ->whereBetween('transaksi.created_at', $dates);
 
-            if ($paymentMethod && $paymentMethod !== 'all') {
-                $trxTrendQuery->where('transaksi.metode_pembayaran', $paymentMethod);
+            if ($transactionType && $transactionType !== 'all') {
+                $trxTrendQuery->where('transaksi.jenis_transaksi', $transactionType);
             }
 
             if ($request->tags) {
@@ -247,7 +242,7 @@ class ReportController extends Controller
      */
     public function getDetail(Request $request): JsonResponse
     {
-        $paymentMethod = $this->getPaymentMethod($request);
+        $transactionType = $this->getTransactionType($request);
         $query = TransactionItem::select(
             'transaksi.created_at',
             'transaksi.nomor_transaksi as transaction_number',
@@ -265,8 +260,8 @@ class ReportController extends Controller
         $dates = $this->getDateRange($request);
         $query->whereBetween('transaksi.created_at', $dates);
 
-        if ($paymentMethod && $paymentMethod !== 'all') {
-            $query->where('transaksi.metode_pembayaran', $paymentMethod);
+        if ($transactionType && $transactionType !== 'all') {
+            $query->where('transaksi.jenis_transaksi', $transactionType);
         }
 
         if ($request->search) {
@@ -317,7 +312,7 @@ class ReportController extends Controller
         $fileName = 'laporan-penjualan-' . date('Y-m-d-His') . '.csv';
 
         $response = new StreamedResponse(function () use ($request) {
-            $paymentMethod = $this->getPaymentMethod($request);
+            $transactionType = $this->getTransactionType($request);
             $handle = fopen('php://output', 'w');
             
             // Add BOM for Excel compatibility
@@ -352,8 +347,8 @@ class ReportController extends Controller
             $dates = $this->getDateRange($request);
             $query->whereBetween('transaksi.created_at', $dates);
 
-            if ($paymentMethod && $paymentMethod !== 'all') {
-                $query->where('transaksi.metode_pembayaran', $paymentMethod);
+            if ($transactionType && $transactionType !== 'all') {
+                $query->where('transaksi.jenis_transaksi', $transactionType);
             }
             
             if ($request->tags) {

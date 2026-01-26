@@ -53,15 +53,14 @@
             </div>
 
             {{-- Payment Method Filter --}}
+            {{-- Transaction Type Filter --}}
             <select 
-                x-model="filters.payment_method"
+                x-model="filters.transaction_type"
                 class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 bg-white min-w-[150px]"
             >
-                <option value="all">Semua Metode</option>
-                <option value="tunai">Tunai</option>
-                <option value="kartu">Kartu</option>
-                <option value="qris">QRIS</option>
-                <option value="ewallet">E-Wallet</option>
+                <option value="all">Semua Tipe</option>
+                <option value="eceran">Eceran (Retail)</option>
+                <option value="grosir">Grosir (Wholesale)</option>
             </select>
 
             {{-- Tags Filter --}}
