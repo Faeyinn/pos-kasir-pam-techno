@@ -27,7 +27,10 @@
                 @change="setItemUnit(item.id, $event.target.value)"
             >
                 <template x-for="u in item.units" :key="u.id">
-                    <option :value="u.id" x-text="u.qtyPerUnit > 1 ? `${u.name} (@ ${u.qtyPerUnit})` : u.name"></option>
+                    <option
+                        :value="u.id"
+                        x-text="u.qtyPerUnit > 1 ? `${u.name} (${u.qtyPerUnit})` : `${u.name} [eceran]`"
+                    ></option>
                 </template>
             </select>
         </div>

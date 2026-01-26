@@ -10,10 +10,93 @@ use App\Models\ProdukSatuan;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    private function getActiveWholesaleUnits(Product $product): Collection
+    {
+        $product->loadMissing('satuan');
+
+        return $product->satuan
+            ->where('is_active', true)
+            ->where('is_default', false)
+            ->sortBy('jumlah_per_satuan')
+            ->values();
+    }
+
+    private function syncWholesaleUnits(Product $product, int $hargaPokokDasar, array $satuanGrosir): void
+    {
+        $product->loadMissing('satuan');
+
+        // Map existing non-default units by id_satuan
+        $existingById = $product->satuan
+            ->where('is_default', false)
+            ->keyBy('id_satuan');
+
+        $keepIds = [];
+
+        foreach ($satuanGrosir as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $idSatuan = isset($row['id_satuan']) ? (int) $row['id_satuan'] : null;
+            $namaSatuan = trim((string) ($row['nama_satuan'] ?? ''));
+            $jumlahPerSatuan = (int) ($row['jumlah_per_satuan'] ?? 0);
+            $hargaJual = (int) ($row['harga_jual'] ?? 0);
+
+            // Grosir wajib > 1 (kalau 1 berarti sama dengan satuan dasar)
+            if ($namaSatuan === '' || $jumlahPerSatuan < 2) {
+                continue;
+            }
+
+            $target = null;
+
+            if ($idSatuan && $existingById->has($idSatuan)) {
+                $target = $existingById->get($idSatuan);
+            }
+
+            // Fallback: cari berdasarkan nama satuan (non-default)
+            if (!$target) {
+                $target = $product->satuan
+                    ->where('is_default', false)
+                    ->firstWhere('nama_satuan', $namaSatuan);
+            }
+
+            if (!$target) {
+                $target = ProdukSatuan::create([
+                    'id_produk' => $product->id_produk,
+                    'nama_satuan' => $namaSatuan,
+                    'jumlah_per_satuan' => $jumlahPerSatuan,
+                    // Asumsi harga_pokok default adalah per satuan dasar
+                    'harga_pokok' => $hargaPokokDasar * $jumlahPerSatuan,
+                    'harga_jual' => $hargaJual,
+                    'is_default' => false,
+                    'is_active' => true,
+                ]);
+            } else {
+                $target->update([
+                    'nama_satuan' => $namaSatuan,
+                    'jumlah_per_satuan' => $jumlahPerSatuan,
+                    'harga_pokok' => $hargaPokokDasar * $jumlahPerSatuan,
+                    'harga_jual' => $hargaJual,
+                    'is_default' => false,
+                    'is_active' => true,
+                ]);
+            }
+
+            $keepIds[] = (int) $target->id_satuan;
+        }
+
+        // Nonaktifkan satuan non-default yang tidak dikirim lagi (tanpa delete, aman untuk histori transaksi)
+        $product->satuan
+            ->where('is_default', false)
+            ->whereNotIn('id_satuan', $keepIds)
+            ->each(fn ($s) => $s->update(['is_active' => false]));
+    }
+
     private function formatProductForAdmin(Product $product): array
     {
         $product->loadMissing(['tags', 'satuan', 'discounts']);
@@ -23,9 +106,10 @@ class ProductController extends Controller
             ->firstWhere('is_default', true)
             ?? $product->satuan->where('is_active', true)->first();
 
-        $wholesaleSatuan = $product->satuan
-            ->where('is_active', true)
-            ->where('is_default', false)
+        $activeWholesaleUnits = $this->getActiveWholesaleUnits($product);
+
+        // Legacy compatibility: pilih satuan grosir terbesar untuk ditampilkan di tabel lama
+        $wholesaleSatuan = $activeWholesaleUnits
             ->sortByDesc('jumlah_per_satuan')
             ->first();
 
@@ -44,6 +128,15 @@ class ProductController extends Controller
             'harga_jual_grosir' => $hargaJualGrosir,
             'nama_satuan_grosir' => $namaSatuanGrosir,
             'jumlah_per_satuan_grosir' => $jumlahPerSatuanGrosir,
+            'satuan_grosir' => $activeWholesaleUnits
+                ->map(fn ($s) => [
+                    'id_satuan' => $s->id_satuan,
+                    'nama_satuan' => $s->nama_satuan,
+                    'jumlah_per_satuan' => (int) $s->jumlah_per_satuan,
+                    'harga_jual' => (int) $s->harga_jual,
+                ])
+                ->values()
+                ->toArray(),
             'stok' => (int) $product->stok,
 
             // Legacy keys (admin UI compatibility)
@@ -54,6 +147,16 @@ class ProductController extends Controller
             'wholesale' => $hargaJualGrosir,
             'wholesale_unit' => $namaSatuanGrosir,
             'wholesale_qty_per_unit' => $jumlahPerSatuanGrosir,
+            // New (optional) legacy-friendly payload
+            'wholesale_units' => $activeWholesaleUnits
+                ->map(fn ($s) => [
+                    'id_satuan' => $s->id_satuan,
+                    'unit_name' => $s->nama_satuan,
+                    'quantity_in_base_unit' => (int) $s->jumlah_per_satuan,
+                    'price_per_unit' => (int) $s->harga_jual,
+                ])
+                ->values()
+                ->toArray(),
             'stock' => (int) $product->stok,
             'is_active' => (bool) $product->is_active,
             'tags' => $product->tags
@@ -151,23 +254,12 @@ class ProductController extends Controller
                 'is_active' => true,
             ]);
 
-            // Optional wholesale unit (single unit supported by current admin UI)
-            $wholesalePrice = (int) ($validated['harga_jual_grosir'] ?? 0);
-            $wholesaleUnit = trim((string) ($validated['nama_satuan_grosir'] ?? ''));
-            $wholesaleQtyPerUnit = (int) ($validated['jumlah_per_satuan_grosir'] ?? 1);
-
-            if ($wholesalePrice > 0 && $wholesaleQtyPerUnit > 1 && $wholesaleUnit !== '') {
-                ProdukSatuan::create([
-                    'id_produk' => $product->id_produk,
-                    'nama_satuan' => $wholesaleUnit,
-                    'jumlah_per_satuan' => $wholesaleQtyPerUnit,
-                    // Assume cost_price is per Pcs
-                    'harga_pokok' => (int) $validated['harga_pokok'] * $wholesaleQtyPerUnit,
-                    'harga_jual' => $wholesalePrice,
-                    'is_default' => false,
-                    'is_active' => true,
-                ]);
-            }
+            // Grosir multi-satuan
+            $this->syncWholesaleUnits(
+                $product,
+                (int) $validated['harga_pokok'],
+                (array) ($validated['satuan_grosir'] ?? [])
+            );
 
             // Sync tags
             $product->tags()->sync($validated['tag_ids']);
@@ -223,39 +315,12 @@ class ProductController extends Controller
                 'is_active' => true,
             ]);
 
-            $wholesalePrice = (int) ($validated['harga_jual_grosir'] ?? 0);
-            $wholesaleUnit = trim((string) ($validated['nama_satuan_grosir'] ?? ''));
-            $wholesaleQtyPerUnit = (int) ($validated['jumlah_per_satuan_grosir'] ?? 1);
-
-            if ($wholesalePrice > 0 && $wholesaleQtyPerUnit > 1 && $wholesaleUnit !== '') {
-                $wholesaleSatuan = $product->satuan
-                    ->where('is_default', false)
-                    ->firstWhere('nama_satuan', $wholesaleUnit);
-
-                if (!$wholesaleSatuan) {
-                    $wholesaleSatuan = ProdukSatuan::create([
-                        'id_produk' => $product->id_produk,
-                        'nama_satuan' => $wholesaleUnit,
-                        'jumlah_per_satuan' => $wholesaleQtyPerUnit,
-                        'harga_pokok' => (int) $validated['harga_pokok'] * $wholesaleQtyPerUnit,
-                        'harga_jual' => $wholesalePrice,
-                        'is_default' => false,
-                        'is_active' => true,
-                    ]);
-                } else {
-                    $wholesaleSatuan->update([
-                        'jumlah_per_satuan' => $wholesaleQtyPerUnit,
-                        'harga_pokok' => (int) $validated['harga_pokok'] * $wholesaleQtyPerUnit,
-                        'harga_jual' => $wholesalePrice,
-                        'is_active' => true,
-                    ]);
-                }
-            } else {
-                // If wholesale is disabled in the form, deactivate existing non-default units created via this UI
-                $product->satuan
-                    ->where('is_default', false)
-                    ->each(fn ($s) => $s->update(['is_active' => false]));
-            }
+            // Grosir multi-satuan
+            $this->syncWholesaleUnits(
+                $product,
+                (int) $validated['harga_pokok'],
+                (array) ($validated['satuan_grosir'] ?? [])
+            );
 
             // Sync tags
             $product->tags()->sync($validated['tag_ids']);

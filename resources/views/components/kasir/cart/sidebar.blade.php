@@ -35,6 +35,11 @@
                     <span class="text-xl font-black text-blue-600" x-text="'Rp ' + formatNumber(cartTotal)"></span>
                 </div>
 
+                <div class="flex items-center justify-between text-sm text-gray-500">
+                    <span>Total item (pcs)</span>
+                    <span class="font-bold text-gray-700" x-text="formatNumber(cartTotalQtyDasar)"></span>
+                </div>
+
                 <div class="space-y-3">
                     <button 
                         @click="showPaymentModal = true"

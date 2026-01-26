@@ -120,51 +120,87 @@
                     >
                 </div>
 
-                {{-- Harga Grosir (Optional) --}}
+                {{-- Harga Grosir (Multi Satuan - Opsional) --}}
                 <div class="border-t border-slate-200 pt-4">
-                    <h4 class="font-semibold text-slate-900 mb-3">Harga Grosir (Opsional)</h4>
-                    
-                    <div class="grid grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">
-                                Harga Grosir
-                            </label>
-                            <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">Rp</span>
-                                <input 
-                                    type="number"
-                                    x-model.number="addForm.wholesale"
-                                    class="w-full pl-12 pr-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                                    placeholder="0"
-                                    min="0"
-                                >
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold text-slate-900">Harga Grosir (Opsional)</h4>
+                        <button
+                            type="button"
+                            x-on:click="addWholesaleUnit('add')"
+                            class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium text-slate-700 transition-colors flex items-center gap-2"
+                        >
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            Tambah Satuan
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <template x-for="(u, idx) in addForm.satuan_grosir" :key="idx">
+                            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+                                <div class="grid grid-cols-12 gap-3 items-end">
+                                    <div class="col-span-12 md:col-span-5">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                                            Nama Satuan <span class="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            x-model="u.nama_satuan"
+                                            class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                            placeholder="Pack, Dus, Karton"
+                                        >
+                                    </div>
+
+                                    <div class="col-span-12 md:col-span-3">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                                            Isi per Satuan <span class="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            x-model.number="u.jumlah_per_satuan"
+                                            class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                            placeholder="6"
+                                            min="2"
+                                        >
+                                    </div>
+
+                                    <div class="col-span-12 md:col-span-3">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                                            Harga per Satuan <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="relative">
+                                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">Rp</span>
+                                            <input
+                                                type="number"
+                                                x-model.number="u.harga_jual"
+                                                class="w-full pl-12 pr-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                                placeholder="0"
+                                                min="0"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="col-span-12 md:col-span-1 flex justify-end">
+                                        <button
+                                            type="button"
+                                            x-on:click="removeWholesaleUnit('add', idx)"
+                                            class="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                                            title="Hapus satuan"
+                                        >
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="mt-2 text-xs text-slate-500">
+                                    Contoh: Jika satuan dasar adalah Pcs, maka Pack (6) berarti 1 Pack berisi 6 Pcs.
+                                </p>
                             </div>
-                        </div>
+                        </template>
 
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">
-                                Satuan
-                            </label>
-                            <input 
-                                type="text"
-                                x-model="addForm.wholesale_unit"
-                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                                placeholder="Dus, Karung, Pack"
-                            >
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">
-                                Qty per Unit
-                            </label>
-                            <input 
-                                type="number"
-                                x-model.number="addForm.wholesale_qty_per_unit"
-                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                                placeholder="1"
-                                min="1"
-                            >
-                        </div>
+                        <template x-if="!addForm.satuan_grosir || addForm.satuan_grosir.length === 0">
+                            <div class="p-4 rounded-2xl border border-dashed border-slate-300 text-sm text-slate-500">
+                                Belum ada satuan grosir. Klik "Tambah Satuan" untuk menambahkan.
+                            </div>
+                        </template>
                     </div>
                 </div>
 

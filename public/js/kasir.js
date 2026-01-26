@@ -413,6 +413,15 @@ document.addEventListener("alpine:init", () => {
             );
         },
 
+        // Total item dalam satuan dasar (pcs) untuk seluruh keranjang
+        get cartTotalQtyDasar() {
+            return this.cart.reduce((total, item) => {
+                const unit = this.getSelectedUnit(item);
+                const qtyPerUnit = unit ? Number(unit.qtyPerUnit || 1) : 1;
+                return total + (Number(item.qty || 0) || 0) * qtyPerUnit;
+            }, 0);
+        },
+
         get canApplyWholesale() {
             return this.cart.some((item) => item.wholesale > 0);
         },

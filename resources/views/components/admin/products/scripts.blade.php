@@ -162,17 +162,21 @@
         },
 
         form: {
-            id: null, name: '', price: 0, cost_price: 0, wholesale: 0,
-            wholesale_unit: '', wholesale_qty_per_unit: 1, stock: 0,
-            is_active: true, tag_ids: []
+            id: null, name: '', price: 0, cost_price: 0,
+            // grosir multi-satuan
+            satuan_grosir: [],
+            // legacy (tetap ada agar tabel/list lama tidak crash bila masih dipakai)
+            wholesale: 0, wholesale_unit: '', wholesale_qty_per_unit: 1,
+            stock: 0, is_active: true, tag_ids: []
         },
         errors: {},
         loading: false,
         
         addForm: {
-            name: '', price: 0, cost_price: 0, wholesale: 0,
-            wholesale_unit: '', wholesale_qty_per_unit: 1, stock: 0,
-            is_active: true, tag_ids: []
+            name: '', price: 0, cost_price: 0,
+            satuan_grosir: [],
+            wholesale: 0, wholesale_unit: '', wholesale_qty_per_unit: 1,
+            stock: 0, is_active: true, tag_ids: []
         },
         addErrors: {},
         addLoading: false,
@@ -209,12 +213,44 @@
 
         openAddModal() {
             this.addForm = {
-                name: '', price: 0, cost_price: 0, wholesale: 0,
-                wholesale_unit: '', wholesale_qty_per_unit: 1, stock: 0,
-                is_active: true, tag_ids: []
+                name: '', price: 0, cost_price: 0,
+                satuan_grosir: [],
+                wholesale: 0, wholesale_unit: '', wholesale_qty_per_unit: 1,
+                stock: 0, is_active: true, tag_ids: []
             };
             this.addErrors = {};
             this.$dispatch('open-product-add');
+        },
+
+        addWholesaleUnit(target = 'add') {
+            const key = target === 'edit' ? 'form' : 'addForm';
+            if (!Array.isArray(this[key].satuan_grosir)) this[key].satuan_grosir = [];
+            this[key].satuan_grosir.push({
+                id_satuan: null,
+                nama_satuan: '',
+                jumlah_per_satuan: 2,
+                harga_jual: 0,
+            });
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        removeWholesaleUnit(target = 'add', idx) {
+            const key = target === 'edit' ? 'form' : 'addForm';
+            if (!Array.isArray(this[key].satuan_grosir)) return;
+            this[key].satuan_grosir.splice(idx, 1);
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        sanitizeWholesaleUnits(units) {
+            const rows = Array.isArray(units) ? units : [];
+            return rows
+                .map((u) => ({
+                    id_satuan: u.id_satuan ? Number(u.id_satuan) : null,
+                    nama_satuan: (u.nama_satuan || '').toString().trim(),
+                    jumlah_per_satuan: Number(u.jumlah_per_satuan || 0),
+                    harga_jual: Number(u.harga_jual || 0),
+                }))
+                .filter((u) => u.nama_satuan && u.jumlah_per_satuan > 0);
         },
 
         async createProduct() {
@@ -222,13 +258,18 @@
             this.addErrors = {};
 
             try {
+                const payload = {
+                    ...this.addForm,
+                    satuan_grosir: this.sanitizeWholesaleUnits(this.addForm.satuan_grosir),
+                };
+
                 const response = await this.apiFetch('/api/admin/products', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify(this.addForm)
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
@@ -255,11 +296,37 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    const wholesaleUnitsFromApi =
+                        data.data.satuan_grosir ||
+                        (data.data.wholesale_units
+                            ? (data.data.wholesale_units || []).map((u) => ({
+                                  id_satuan: u.id_satuan ?? null,
+                                  nama_satuan: u.unit_name ?? '',
+                                  jumlah_per_satuan: u.quantity_in_base_unit ?? 2,
+                                  harga_jual: u.price_per_unit ?? 0,
+                              }))
+                            : null);
+
+                    // Fallback dari payload legacy single grosir
+                    let fallbackLegacy = [];
+                    const legacyPrice = this.getWholesalePrice(data.data);
+                    const legacyName = (this.getWholesaleUnit(data.data) || '').toString().trim();
+                    const legacyQty = Number(this.getWholesaleQtyPerUnit(data.data) || 0);
+                    if (legacyPrice > 0 && legacyName && legacyQty > 1) {
+                        fallbackLegacy = [{
+                            id_satuan: null,
+                            nama_satuan: legacyName,
+                            jumlah_per_satuan: legacyQty,
+                            harga_jual: legacyPrice,
+                        }];
+                    }
+
                     this.form = {
                         id: data.data.id,
                         name: this.getProductName(data.data),
                         price: this.getRetailPrice(data.data),
                         cost_price: this.getCostPrice(data.data),
+                        satuan_grosir: this.sanitizeWholesaleUnits(wholesaleUnitsFromApi ?? fallbackLegacy),
                         wholesale: this.getWholesalePrice(data.data),
                         wholesale_unit: this.getWholesaleUnit(data.data),
                         wholesale_qty_per_unit: this.getWholesaleQtyPerUnit(data.data),
@@ -280,13 +347,18 @@
             this.errors = {};
 
             try {
+                const payload = {
+                    ...this.form,
+                    satuan_grosir: this.sanitizeWholesaleUnits(this.form.satuan_grosir),
+                };
+
                 const response = await this.apiFetch(`/api/admin/products/${this.form.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify(this.form)
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();

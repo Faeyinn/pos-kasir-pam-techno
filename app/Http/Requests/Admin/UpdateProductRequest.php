@@ -24,6 +24,14 @@ class UpdateProductRequest extends FormRequest
             'nama_produk' => 'required|string|max:255',
             'harga_jual' => 'required|integer|min:0',
             'harga_pokok' => 'required|integer|min:0',
+            // Grosir multi-satuan (disimpan sebagai baris di tabel produk_satuan)
+            'satuan_grosir' => 'nullable|array',
+            'satuan_grosir.*.id_satuan' => 'nullable|integer|exists:produk_satuan,id_satuan',
+            'satuan_grosir.*.nama_satuan' => 'required|string|max:100',
+            'satuan_grosir.*.jumlah_per_satuan' => 'required|integer|min:2',
+            'satuan_grosir.*.harga_jual' => 'required|integer|min:0',
+
+            // Legacy single grosir (masih diterima untuk backward compatibility)
             'harga_jual_grosir' => 'nullable|integer|min:0',
             'nama_satuan_grosir' => 'nullable|string|max:50',
             'jumlah_per_satuan_grosir' => 'nullable|integer|min:1',
@@ -61,6 +69,36 @@ class UpdateProductRequest extends FormRequest
     {
         $payload = $this->all();
 
+        $incomingWholesaleUnits = $payload['satuan_grosir'] ?? null;
+
+        // Legacy -> build array satuan_grosir (jika belum dikirim dari UI baru)
+        if (!is_array($incomingWholesaleUnits)) {
+            $legacyPrice = $payload['harga_jual_grosir'] ?? $payload['wholesale'] ?? null;
+            $legacyUnit = $payload['nama_satuan_grosir'] ?? $payload['wholesale_unit'] ?? null;
+            $legacyQty = $payload['jumlah_per_satuan_grosir'] ?? $payload['wholesale_qty_per_unit'] ?? null;
+
+            $legacyUnit = is_string($legacyUnit) ? trim($legacyUnit) : '';
+
+            if ($legacyPrice !== null || $legacyUnit !== '' || $legacyQty !== null) {
+                $incomingWholesaleUnits = [[
+                    'nama_satuan' => $legacyUnit,
+                    'jumlah_per_satuan' => $legacyQty,
+                    'harga_jual' => $legacyPrice,
+                ]];
+            } else {
+                $incomingWholesaleUnits = [];
+            }
+        }
+
+        // Sanitasi: buang baris kosong
+        $incomingWholesaleUnits = array_values(array_filter((array) $incomingWholesaleUnits, function ($row) {
+            if (!is_array($row)) return false;
+            $nama = trim((string) ($row['nama_satuan'] ?? ''));
+            $qty = (int) ($row['jumlah_per_satuan'] ?? 0);
+            $harga = $row['harga_jual'] ?? null;
+            return $nama !== '' && $qty > 0 && $harga !== null;
+        }));
+
         $this->merge([
             // Legacy -> Indonesian
             'nama_produk' => $payload['nama_produk'] ?? $payload['name'] ?? null,
@@ -70,6 +108,9 @@ class UpdateProductRequest extends FormRequest
             'harga_jual_grosir' => $payload['harga_jual_grosir'] ?? $payload['wholesale'] ?? null,
             'nama_satuan_grosir' => $payload['nama_satuan_grosir'] ?? $payload['wholesale_unit'] ?? null,
             'jumlah_per_satuan_grosir' => $payload['jumlah_per_satuan_grosir'] ?? $payload['wholesale_qty_per_unit'] ?? null,
+
+            // New
+            'satuan_grosir' => $incomingWholesaleUnits,
         ]);
     }
 
@@ -81,6 +122,14 @@ class UpdateProductRequest extends FormRequest
         $validator->after(function ($validator) {
             if ($this->harga_pokok > $this->harga_jual) {
                 $validator->errors()->add('harga_pokok', 'Harga modal tidak boleh lebih besar dari harga jual');
+            }
+
+            // Validasi unik nama_satuan pada satu produk (untuk menghindari duplikasi)
+            $units = (array) ($this->input('satuan_grosir') ?? []);
+            $names = array_map(fn ($u) => mb_strtolower(trim((string) ($u['nama_satuan'] ?? ''))), $units);
+            $names = array_values(array_filter($names, fn ($n) => $n !== ''));
+            if (count($names) !== count(array_unique($names))) {
+                $validator->errors()->add('satuan_grosir', 'Nama satuan grosir tidak boleh duplikat');
             }
         });
     }
