@@ -41,7 +41,7 @@
 
     <!-- Heatmap Grid -->
     <div class="overflow-x-auto pb-4 scrollbar-hide">
-        <div class="min-w-[850px] flex flex-col gap-1">
+        <div class="min-w-[850px] flex flex-col gap-1 heatmap-container">
             <!-- X-Axis Labels (Time) -->
             <div class="flex items-center mb-2">
                 <div class="w-14 flex-shrink-0"></div> <!-- Spacer for Y-axis labels -->
