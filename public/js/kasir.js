@@ -101,6 +101,7 @@ document.addEventListener("alpine:init", () => {
                             .map((u) => ({
                                 id: u.id_satuan,
                                 name: u.nama_satuan,
+                                barcode: u.barcode,
                                 qtyPerUnit: Number(u.jumlah_per_satuan || 1),
                                 price: Number(u.harga_jual || 0),
                                 isDefault: !!u.is_default,
@@ -227,14 +228,31 @@ document.addEventListener("alpine:init", () => {
 
         handleBarcodeScan(code) {
             console.log("Handling scan:", code);
-            const product = this.products.find(
-                (p) =>
-                    p.id == code || p.name.toLowerCase() === code.toLowerCase(),
-            );
-            if (product) {
-                this.addToCart(product);
+
+            // 1. Search for specific unit match by barcode
+            let matchedProduct = null;
+            let matchedUnitId = null;
+
+            for (const p of this.products) {
+                const unit = p.units.find(u => u.barcode === code);
+                if (unit) {
+                    matchedProduct = p;
+                    matchedUnitId = unit.id;
+                    break;
+                }
+            }
+
+            // 2. Fallback: Search by ID or Name (old logic)
+            if (!matchedProduct) {
+                matchedProduct = this.products.find(
+                    (p) => p.id == code || p.name.toLowerCase() === code.toLowerCase()
+                );
+            }
+
+            if (matchedProduct) {
+                this.addToCart(matchedProduct, matchedUnitId);
                 this.addNotification(
-                    `Produk ditambahkan: ${product.name}`,
+                    `Produk ditambahkan: ${matchedProduct.name}`,
                     "success",
                 );
             } else {
@@ -269,20 +287,36 @@ document.addEventListener("alpine:init", () => {
             return this.cart.some(item => this.isWholesale(item));
         },
 
-        addToCart(product) {
+        addToCart(product, forcedUnitId = null) {
             const existingItem = this.cart.find(
                 (item) => item.id === product.id,
             );
 
-            const defaultUnitId =
+            const defaultUnitId = forcedUnitId ||
                 product.defaultUnitId ||
                 (product.units && product.units[0]
                     ? product.units[0].id
                     : null);
 
             if (existingItem) {
-                // If it exists, we just increment the first selection's quantity
-                this.updateQty(product.id, 1, 0);
+                // If specific unit is forced (from barcode), find or add that selection
+                if (forcedUnitId) {
+                    const selectionIndex = existingItem.selections.findIndex(s => s.unitId === forcedUnitId);
+                    if (selectionIndex !== -1) {
+                        this.updateQty(product.id, 1, selectionIndex);
+                    } else {
+                        // Check stock for adding new unit selection
+                        const unitObj = product.units.find(u => u.id === forcedUnitId);
+                        if (this.getItemRequiredStock(existingItem) + (unitObj ? unitObj.qtyPerUnit : 1) > existingItem.stock) {
+                            this.addNotification(`Stok tidak mencukupi untuk menambah satuan baru.`);
+                            return;
+                        }
+                        existingItem.selections.push({ unitId: forcedUnitId, qty: 1 });
+                    }
+                } else {
+                    // Default behavior: increment first selection
+                    this.updateQty(product.id, 1, 0);
+                }
             } else {
                 const initialItem = {
                     ...product,
