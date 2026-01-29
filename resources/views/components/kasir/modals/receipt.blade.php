@@ -68,17 +68,25 @@
 
                         <div class="border-t border-gray-100 pt-3">
                             <p class="text-[10px] text-gray-500 mb-2">================================</p>
-                            <div class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                                <template x-for="(item, index) in (receiptData ? receiptData.items : [])" :key="index">
-                                    <div>
-                                        <div class="flex justify-between items-start gap-2">
-                                            <p class="font-semibold text-xs text-gray-900 flex-1" x-text="item.name"></p>
-                                            <span class="font-bold text-xs text-gray-900 whitespace-nowrap" x-text="'Rp ' + formatNumber(item.qty * item.finalPrice)"></span>
+                            <div class="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                                <template x-for="(group, gIndex) in (receiptData ? receiptData.groupedItems : [])" :key="gIndex">
+                                    <div class="border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                                        <div class="flex justify-between items-start gap-2 mb-1">
+                                            <p class="font-bold text-xs text-gray-900 flex-1" x-text="group.name"></p>
+                                            <span class="font-black text-xs text-gray-900 whitespace-nowrap" x-text="'Rp ' + formatNumber(group.totalPrice)"></span>
                                         </div>
-                                        <p class="text-[10px] text-gray-600 mt-0.5">
-                                            <span x-text="item.qty"></span> × 
-                                            <span x-text="'Rp ' + formatNumber(item.finalPrice)"></span>
-                                        </p>
+                                        <div class="space-y-0.5 ml-2 border-l-2 border-gray-100 pl-2">
+                                            <template x-for="(part, pIndex) in group.parts" :key="pIndex">
+                                                <div class="flex justify-between items-center">
+                                                    <p class="text-[10px] text-gray-500">
+                                                        <span x-text="part.qty"></span> x 
+                                                        <span x-text="part.unitName"></span>
+                                                        <span x-text="' (@' + formatNumber(part.finalPrice) + ')'" class="text-[9px] opacity-70"></span>
+                                                    </p>
+                                                    <span class="text-[10px] font-semibold text-gray-600" x-text="'Rp ' + formatNumber(part.qty * part.finalPrice)"></span>
+                                                </div>
+                                            </template>
+                                        </div>
                                     </div>
                                 </template>
                             </div>

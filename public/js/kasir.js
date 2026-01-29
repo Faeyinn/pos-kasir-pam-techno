@@ -479,46 +479,60 @@ document.addEventListener("alpine:init", () => {
                 const response = await fetch("/api/transactions");
                 const data = await response.json();
                 if (data.success) {
-                    this.transactionHistory = data.data.map((t) => ({
-                        transactionNumber: t.nomor_transaksi,
-                        date: new Date(t.created_at).toLocaleDateString(
-                            "id-ID",
-                            {
-                                day: "2-digit",
-                                month: "long",
-                                year: "numeric",
-                            },
-                        ),
-                        time: new Date(t.created_at).toLocaleTimeString(
-                            "id-ID",
-                            {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                            },
-                        ),
-                        cashier: t.user.nama,
-                        paymentMethod: t.metode_pembayaran,
-                        amountReceived: t.jumlah_dibayar,
-                        change: t.kembalian,
-                        items: t.items.map((item) => ({
+                    this.transactionHistory = data.data.map((t) => {
+                        const items = (t.items || []).map((item) => ({
                             id_produk: item.id_produk,
                             name: item.nama_produk,
                             qty: item.jumlah,
                             finalPrice: item.harga_jual,
                             unitName: item.nama_satuan,
                             qtyPerUnit: item.jumlah_per_satuan,
-                        })),
-                        paymentType:
-                            t.jenis_transaksi === "grosir"
-                                ? "wholesale"
-                                : "retail",
-                        subtotal: t.total_belanja,
-                        total: t.total_transaksi,
-                    }));
+                        }));
+
+                        return {
+                            transactionNumber: t.nomor_transaksi,
+                            date: new Date(t.created_at).toLocaleDateString("id-ID", {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                            }),
+                            time: new Date(t.created_at).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            }),
+                            cashier: t.user.nama,
+                            paymentMethod: t.metode_pembayaran,
+                            amountReceived: t.jumlah_dibayar,
+                            change: t.kembalian,
+                            items: items,
+                            groupedItems: this.groupReceiptItems(items),
+                            paymentType: t.jenis_transaksi === "grosir" ? "wholesale" : "retail",
+                            subtotal: t.total_belanja,
+                            total: t.total_transaksi,
+                        };
+                    });
                 }
             } catch (error) {
                 console.error("Error fetching transaction history:", error);
             }
+        },
+
+        groupReceiptItems(items) {
+            return Object.values(items.reduce((acc, item) => {
+                const id = item.id_produk;
+                if (!acc[id]) {
+                    acc[id] = {
+                        name: item.name,
+                        totalPrice: 0,
+                        totalQtyDasar: 0,
+                        parts: [],
+                    };
+                }
+                acc[id].totalPrice += item.qty * item.finalPrice;
+                acc[id].totalQtyDasar += item.qty * item.qtyPerUnit;
+                acc[id].parts.push(item);
+                return acc;
+            }, {}));
         },
 
         async confirmPayment() {
@@ -587,6 +601,14 @@ document.addEventListener("alpine:init", () => {
 
                 const transaction = data.data;
                 const now = new Date(transaction.created_at);
+                const items = (transaction.items || []).map((item) => ({
+                    id_produk: item.id_produk,
+                    name: item.nama_produk,
+                    qty: item.jumlah,
+                    finalPrice: item.harga_jual,
+                    unitName: item.nama_satuan,
+                    qtyPerUnit: item.jumlah_per_satuan,
+                }));
 
                 const newReceipt = {
                     transactionNumber: transaction.nomor_transaksi,
@@ -603,18 +625,9 @@ document.addEventListener("alpine:init", () => {
                     paymentMethod: transaction.metode_pembayaran,
                     amountReceived: transaction.jumlah_dibayar,
                     change: transaction.kembalian,
-                    items: (transaction.items || []).map((item) => ({
-                        id_produk: item.id_produk,
-                        name: item.nama_produk,
-                        qty: item.jumlah,
-                        finalPrice: item.harga_jual,
-                        unitName: item.nama_satuan,
-                        qtyPerUnit: item.jumlah_per_satuan,
-                    })),
-                    paymentType:
-                        transaction.jenis_transaksi === "grosir"
-                            ? "wholesale"
-                            : "retail",
+                    items: items,
+                    groupedItems: this.groupReceiptItems(items),
+                    paymentType: transaction.jenis_transaksi === "grosir" ? "wholesale" : "retail",
                     subtotal: transaction.total_belanja,
                     total: transaction.total_transaksi,
                 };
@@ -766,51 +779,34 @@ document.addEventListener("alpine:init", () => {
             lines.push(this.centerText("DAFTAR BELANJA", WIDTH));
             lines.push(DASH_LINE);
 
-            // Group items by id_produk for unified display
-            const groupedItems = receipt.items.reduce((acc, item) => {
-                const id = item.id_produk;
-                if (!acc[id]) {
-                    acc[id] = {
-                        name: item.name,
-                        totalPrice: 0,
-                        totalQtyDasar: 0,
-                        parts: [],
-                    };
-                }
-                const subtotal = item.qty * item.finalPrice;
-                acc[id].totalPrice += subtotal;
-                acc[id].totalQtyDasar += item.qty * item.qtyPerUnit;
-                acc[id].parts.push(item);
-                return acc;
-            }, {});
+            const groupedItems = receipt.groupedItems || this.groupReceiptItems(receipt.items);
 
-            Object.values(groupedItems).forEach((group) => {
+            groupedItems.forEach((group) => {
                 const itemTotalFormatted = "Rp " + this.formatNumber(group.totalPrice);
 
-                // Name line
-                const nameLines = this.wrapText(group.name, WIDTH - 2);
-                nameLines.forEach((line) => {
-                    lines.push(line);
+                // Product Name + Total Price
+                const nameLines = this.wrapText(group.name, WIDTH - itemTotalFormatted.length - 1);
+                nameLines.forEach((line, idx) => {
+                    if (idx === nameLines.length - 1) {
+                        lines.push(this.formatRow(line, itemTotalFormatted, WIDTH));
+                    } else {
+                        lines.push(line);
+                    }
                 });
 
-                // Description line (e.g., 1 dus 10 pcs)
-                let description = "";
-                if (group.parts.length > 1 || group.parts[0].qtyPerUnit > 1) {
-                    description = `(${this.formatNumber(group.totalQtyDasar)} pcs) `;
-                    description += group.parts
-                        .map(p => `${p.qty} ${p.unitName}`)
-                        .join(" ");
-                } else {
-                    description = `${group.parts[0].qty} ${group.parts[0].unitName}`;
-                }
+                // Unit breakdown
+                group.parts.forEach(p => {
+                    const subtotalFormatted = "Rp " + this.formatNumber(p.qty * p.finalPrice);
+                    const qtyPriceStr = `${p.qty} x ${p.unitName} @ Rp ${this.formatNumber(p.finalPrice)}`;
 
-                const wrappedDesc = this.wrapText(description, WIDTH - itemTotalFormatted.length - 2);
-                wrappedDesc.forEach((line, idx) => {
-                    if (idx === wrappedDesc.length - 1) {
-                        lines.push(this.formatRow("  " + line, itemTotalFormatted, WIDTH));
-                    } else {
-                        lines.push("  " + line);
-                    }
+                    const wrappedPart = this.wrapText(qtyPriceStr, WIDTH - subtotalFormatted.length - 3);
+                    wrappedPart.forEach((line, idx) => {
+                        if (idx === wrappedPart.length - 1) {
+                            lines.push(this.formatRow("  " + line, subtotalFormatted, WIDTH));
+                        } else {
+                            lines.push("  " + line);
+                        }
+                    });
                 });
                 lines.push("");
             });
