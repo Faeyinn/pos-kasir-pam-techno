@@ -262,16 +262,17 @@ document.addEventListener("alpine:init", () => {
         },
 
         syncPaymentType() {
-            this.paymentType = this.cart.some((item) => this.isWholesale(item))
-                ? "wholesale"
-                : "retail";
+            this.paymentType = this.isWholesalePresent() ? "wholesale" : "retail";
+        },
+
+        isWholesalePresent() {
+            return this.cart.some(item => this.isWholesale(item));
         },
 
         addToCart(product) {
             const existingItem = this.cart.find(
                 (item) => item.id === product.id,
             );
-            const requestQty = 1;
 
             const defaultUnitId =
                 product.defaultUnitId ||
@@ -280,27 +281,17 @@ document.addEventListener("alpine:init", () => {
                     : null);
 
             if (existingItem) {
-                const nextQty = existingItem.qty + requestQty;
-                const unit = this.getSelectedUnit(existingItem);
-                const qtyPerUnit = unit ? unit.qtyPerUnit : 1;
-                const requiredStock = nextQty * qtyPerUnit;
-
-                if (requiredStock > existingItem.stock) {
-                    this.addNotification(
-                        `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${existingItem.stock} unit.`,
-                    );
-                    return;
-                }
-
-                existingItem.qty = nextQty;
+                // If it exists, we just increment the first selection's quantity
+                this.updateQty(product.id, 1, 0);
             } else {
                 const initialItem = {
                     ...product,
-                    qty: requestQty,
-                    extraQty: 0,
-                    selectedUnitId: defaultUnitId,
+                    selections: [
+                        { unitId: defaultUnitId, qty: 1 }
+                    ],
                 };
 
+                // Check stock for initial item
                 if (this.getItemRequiredStock(initialItem) > product.stock) {
                     this.addNotification(
                         `Stok tidak mencukupi! Sisa stok untuk ${product.name} adalah ${product.stock} unit.`,
@@ -314,15 +305,56 @@ document.addEventListener("alpine:init", () => {
             this.syncPaymentType();
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
-        updateQty(productId, delta) {
+
+        addUnitSelection(productId) {
+            const item = this.cart.find(i => i.id === productId);
+            if (!item) return;
+
+            // Find a unit that hasn't been selected yet, or just use the base unit
+            const usedUnitIds = item.selections.map(s => s.unitId);
+            const nextUnit = item.units.find(u => !usedUnitIds.includes(u.id)) || item.units[0];
+
+            if (this.getItemRequiredStock(item) + (nextUnit ? nextUnit.qtyPerUnit : 1) > item.stock) {
+                this.addNotification(`Stok tidak mencukupi untuk menambah satuan baru.`);
+                return;
+            }
+
+            item.selections.push({
+                unitId: nextUnit ? nextUnit.id : item.defaultUnitId,
+                qty: 1
+            });
+
+            this.syncPaymentType();
+            this.$nextTick(() => window.lucide && lucide.createIcons());
+        },
+
+        removeUnitSelection(productId, index) {
+            const item = this.cart.find(i => i.id === productId);
+            if (!item) return;
+
+            if (item.selections.length > 1) {
+                item.selections.splice(index, 1);
+            } else {
+                this.removeFromCart(productId);
+            }
+
+            this.syncPaymentType();
+            this.$nextTick(() => window.lucide && lucide.createIcons());
+        },
+
+        updateQty(productId, delta, index = 0) {
             const item = this.cart.find((i) => i.id === productId);
-            if (item) {
-                const nextQty = item.qty + delta;
+            if (item && item.selections[index]) {
+                const selection = item.selections[index];
+                const nextQty = selection.qty + delta;
+
                 if (delta > 0) {
-                    const unit = this.getSelectedUnit(item);
+                    const unit = item.units.find(u => u.id === selection.unitId);
                     const qtyPerUnit = unit ? unit.qtyPerUnit : 1;
-                    const requiredStock = nextQty * qtyPerUnit + (item.extraQty || 0);
-                    if (requiredStock > item.stock) {
+                    // Check total stock for all selections
+                    const totalRequired = this.getItemRequiredStock(item) + (delta * qtyPerUnit);
+
+                    if (totalRequired > item.stock) {
                         this.addNotification(
                             `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${item.stock} unit.`,
                         );
@@ -330,10 +362,10 @@ document.addEventListener("alpine:init", () => {
                     }
                 }
 
-                item.qty = nextQty;
+                selection.qty = nextQty;
 
-                if (item.qty <= 0) {
-                    this.removeFromCart(productId);
+                if (selection.qty <= 0) {
+                    this.removeUnitSelection(productId, index);
                     return;
                 }
 
@@ -341,51 +373,26 @@ document.addEventListener("alpine:init", () => {
             }
         },
 
-        updateExtraQty(productId, delta) {
+        setItemUnit(productId, newUnitId, index = 0) {
             const item = this.cart.find((i) => i.id === productId);
-            if (item) {
-                const nextExtraQty = (item.extraQty || 0) + delta;
-                if (delta > 0) {
-                    const unit = this.getSelectedUnit(item);
-                    const qtyPerUnit = unit ? unit.qtyPerUnit : 1;
-                    const requiredStock = item.qty * qtyPerUnit + nextExtraQty;
-                    if (requiredStock > item.stock) {
-                        this.addNotification(
-                            `Stok tidak mencukupi! Sisa stok untuk ${item.name} adalah ${item.stock} unit.`,
-                        );
-                        return;
-                    }
-                }
-
-                item.extraQty = Math.max(0, nextExtraQty);
-                this.syncPaymentType();
-            }
-        },
-
-        setItemUnit(productId, newUnitId) {
-            const item = this.cart.find((i) => i.id === productId);
-            if (!item) return;
+            if (!item || !item.selections[index]) return;
 
             newUnitId = Number(newUnitId);
-            const oldUnit = this.getSelectedUnit(item);
-            const oldQtyPerUnit = oldUnit ? Number(oldUnit.qtyPerUnit || 1) : 1;
-            const currentBaseQty = item.qty * oldQtyPerUnit;
+            const selection = item.selections[index];
 
-            item.selectedUnitId = newUnitId;
-            const newUnit = this.getSelectedUnit(item);
-            const newQtyPerUnit = newUnit ? Number(newUnit.qtyPerUnit || 1) : 1;
+            // Stock check for unit change
+            const oldUnit = item.units.find(u => u.id === selection.unitId);
+            const newUnit = item.units.find(u => u.id === newUnitId);
 
-            let rawNewQty = currentBaseQty / newQtyPerUnit;
+            const oldBaseQty = selection.qty * (oldUnit ? oldUnit.qtyPerUnit : 1);
+            const newBaseQty = selection.qty * (newUnit ? newUnit.qtyPerUnit : 1);
 
-            if (rawNewQty < 1) {
-                this.addNotification(
-                    `Kuantitas disesuaikan ke minimal 1 ${newUnit ? newUnit.name : ""}`,
-                    "info",
-                );
-                item.qty = 1;
-            } else {
-                item.qty = Math.round(rawNewQty * 10000) / 10000;
+            if (this.getItemRequiredStock(item) - oldBaseQty + newBaseQty > item.stock) {
+                this.addNotification(`Stok tidak mencukupi untuk berpindah ke satuan ${newUnit ? newUnit.name : ''}.`);
+                return;
             }
+
+            selection.unitId = newUnitId;
 
             this.syncPaymentType();
             this.$nextTick(() => window.lucide && lucide.createIcons());
@@ -402,33 +409,38 @@ document.addEventListener("alpine:init", () => {
             this.$nextTick(() => window.lucide && lucide.createIcons());
         },
 
-        getItemPrice(item) {
-            const unit = this.getSelectedUnit(item);
-            const unitPrice = unit ? unit.price : item.price;
+        // Helper to get selected unit object for a specific selection index
+        getSelectedUnitForSelection(item, index) {
+            const selection = item.selections[index];
+            if (!selection) return null;
+            return item.units.find(u => u.id === selection.unitId) || item.units[0];
+        },
 
+        // Overriding old helpers for backward compatibility where possible
+        getSelectedUnit(item) {
+            return this.getSelectedUnitForSelection(item, 0);
+        },
+
+        getItemRequiredStock(item) {
+            return item.selections.reduce((total, s) => {
+                const unit = item.units.find(u => u.id === s.unitId);
+                return total + (s.qty * (unit ? unit.qtyPerUnit : 1));
+            }, 0);
+        },
+
+        getItemPrice(item, index = 0) {
+            const unit = this.getSelectedUnitForSelection(item, index);
+            const unitPrice = unit ? unit.price : item.price;
             if (item.discount) {
                 return this.applyDiscount(unitPrice, item.discount);
             }
-
             return unitPrice;
         },
 
-        getItemBasePrice(item) {
-            const baseUnit =
-                item.units.find((u) => u.id === item.baseUnitId) ||
-                item.units[0];
-            const price = baseUnit ? baseUnit.price : item.price;
-            if (item.discount) {
-                return this.applyDiscount(price, item.discount);
-            }
-            return price;
-        },
-
         getItemTotalPrice(item) {
-            const primaryTotal = this.getItemPrice(item) * item.qty;
-            const extraTotal =
-                this.getItemBasePrice(item) * (item.extraQty || 0);
-            return primaryTotal + extraTotal;
+            return item.selections.reduce((total, s, index) => {
+                return total + (this.getItemPrice(item, index) * s.qty);
+            }, 0);
         },
 
         get cartTotal() {
@@ -441,23 +453,24 @@ document.addEventListener("alpine:init", () => {
         // Total item dalam satuan dasar (pcs) untuk seluruh keranjang
         get cartTotalQtyDasar() {
             return this.cart.reduce((total, item) => {
-                const unit = this.getSelectedUnit(item);
-                const qtyPerUnit = unit ? Number(unit.qtyPerUnit || 1) : 1;
-                return (
-                    total +
-                    (Number(item.qty || 0) || 0) * qtyPerUnit +
-                    (Number(item.extraQty || 0) || 0)
-                );
+                return total + this.getItemRequiredStock(item);
             }, 0);
         },
 
         get canApplyWholesale() {
-            return this.cart.some((item) => item.wholesale > 0);
+            return this.cart.some((item) =>
+                item.selections.some(s => {
+                    const unit = item.units.find(u => u.id === s.unitId);
+                    return unit && unit.qtyPerUnit > 1;
+                })
+            );
         },
 
         isWholesale(item) {
-            const unit = this.getSelectedUnit(item);
-            return !!unit && Number(unit.qtyPerUnit || 1) > 1;
+            return item.selections.some(s => {
+                const unit = item.units.find(u => u.id === s.unitId);
+                return unit && unit.qtyPerUnit > 1;
+            });
         },
 
         // ==================== TRANSACTIONS ====================
@@ -535,29 +548,17 @@ document.addEventListener("alpine:init", () => {
 
             const itemsForBackend = [];
             this.cart.forEach((item) => {
-                // Primary Unit
-                itemsForBackend.push({
-                    id_produk: item.id,
-                    id_satuan: item.selectedUnitId,
-                    jumlah: item.qty,
-                });
-
-                // Extra Unit (if any)
-                if (item.extraQty > 0) {
+                item.selections.forEach(s => {
                     itemsForBackend.push({
                         id_produk: item.id,
-                        id_satuan: item.baseUnitId,
-                        jumlah: item.extraQty,
+                        id_satuan: s.unitId,
+                        jumlah: s.qty,
                     });
-                }
+                });
             });
 
             const transactionData = {
-                jenis_transaksi: this.cart.some((item) =>
-                    this.isWholesale(item),
-                )
-                    ? "grosir"
-                    : "eceran",
+                jenis_transaksi: this.isWholesalePresent() ? "grosir" : "eceran",
                 metode_pembayaran:
                     paymentModalData.selectedPaymentMethod || "tunai",
                 jumlah_dibayar: Math.round(amountReceived),
