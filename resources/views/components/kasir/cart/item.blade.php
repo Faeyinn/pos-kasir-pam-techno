@@ -5,7 +5,7 @@
     </button>
 
     <h5 class="font-bold text-gray-800 text-base mb-1 pr-6" x-text="item.name"></h5>
-    <div class="flex items-center gap-2 mb-4">
+    <div class="flex flex-wrap items-center gap-2 mb-4">
         <div class="text-[10px] font-black text-blue-600 uppercase tracking-wider" x-text="isWholesale(item) ? 'GROSIR' : 'ECERAN'"></div>
         
         <!-- Discount Indicator (only show if has discount and not wholesale) -->
@@ -16,23 +16,42 @@
         </template>
         
         <div class="text-[10px] font-semibold text-purple-600" x-text="'(' + (getSelectedUnit(item)?.name || '-') + ')'" ></div>
+
+        <!-- Total Breakdown Logic -->
+        <template x-if="item.extraQty > 0">
+            <div class="w-full mt-1 text-[11px] font-bold text-gray-500 italic">
+                <span x-text="'(' + ((item.qty * (getSelectedUnit(item)?.qtyPerUnit || 1)) + item.extraQty) + ' pieces) '"></span>
+                <span x-text="item.qty + ' ' + (getSelectedUnit(item)?.name || '')"></span>
+                <span x-text="' ' + item.extraQty + ' ' + (item.units.find(u => u.id === item.baseUnitId)?.name || 'pcs')"></span>
+            </div>
+        </template>
     </div>
 
     <template x-if="item.units && item.units.length > 1">
-        <div class="mb-4">
-            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Satuan</label>
-            <select
-                class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                :value="item.selectedUnitId"
-                @change="setItemUnit(item.id, $event.target.value)"
-            >
-                <template x-for="u in item.units" :key="u.id">
-                    <option
-                        :value="u.id"
-                        x-text="u.qtyPerUnit > 1 ? `${u.name} (${u.qtyPerUnit})` : `${u.name} [eceran]`"
-                    ></option>
-                </template>
-            </select>
+        <div class="mb-4 grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Satuan Utama</label>
+                <select
+                    class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    :value="item.selectedUnitId"
+                    @change="setItemUnit(item.id, $event.target.value)"
+                >
+                    <template x-for="u in item.units" :key="u.id">
+                        <option
+                            :value="u.id"
+                            x-text="u.qtyPerUnit > 1 ? `${u.name} (${u.qtyPerUnit})` : `${u.name} [eceran]`"
+                        ></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Tambah <span x-text="item.units.find(u => u.id === item.baseUnitId)?.name || 'Pcs'"></span></label>
+                <div class="flex items-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm h-[38px]">
+                    <button @click="updateExtraQty(item.id, -1)" class="w-6 h-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors text-base font-bold">-</button>
+                    <span class="flex-1 text-center text-xs font-black text-gray-800" x-text="item.extraQty || 0"></span>
+                    <button @click="updateExtraQty(item.id, 1)" class="w-6 h-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors text-base font-bold">+</button>
+                </div>
+            </div>
         </div>
     </template>
 
@@ -43,12 +62,17 @@
             <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors text-lg font-bold">+</button>
         </div>
         <div class="text-right">
-            <div class="text-[10px] text-gray-400 mb-0.5 flex items-center justify-end gap-1.5">
+            <div class="text-[10px] text-gray-400 mb-0.5 flex flex-col items-end">
                 <span class="font-bold" :class="isWholesale(item) ? 'text-blue-600' : ''">
                     @ Rp <span x-text="formatNumber(getItemPrice(item))"></span>
                 </span>
+                <template x-if="item.extraQty > 0">
+                    <span class="text-[9px] italic">
+                        + <span x-text="item.extraQty"></span> x Rp <span x-text="formatNumber(getItemBasePrice(item))"></span>
+                    </span>
+                </template>
             </div>
-            <div class="text-lg font-black text-gray-900" x-text="'Rp ' + formatNumber(getItemPrice(item) * item.qty)"></div>
+            <div class="text-lg font-black text-gray-900" x-text="'Rp ' + formatNumber(getItemTotalPrice(item))"></div>
         </div>
     </div>
 </div>
