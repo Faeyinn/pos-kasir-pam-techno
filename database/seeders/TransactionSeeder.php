@@ -32,9 +32,7 @@ class TransactionSeeder extends Seeder
         // Keep seed fast: last 14 days, moderate counts
         for ($dayOffset = 13; $dayOffset >= 0; $dayOffset--) {
             $targetDate = Carbon::now()->subDays($dayOffset);
-            if ($targetDate->isSunday()) {
-                continue;
-            }
+            // Seed all days including Sunday
 
             $isWeekend = $targetDate->isSaturday();
             $dailyTransactionCount = $isWeekend ? rand(6, 10) : rand(4, 8);

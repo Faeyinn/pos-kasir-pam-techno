@@ -106,21 +106,73 @@
             
             <div class="h-8 w-px bg-slate-200 mx-1 no-print"></div>
 
-            <button 
-                @click="exportCSV"
-                class="p-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all shadow-sm active:scale-95 no-print"
-                title="Export Excel"
-            >
-                <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
-            </button>
-            
-            <button 
-                @click="printReport"
-                class="p-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-lg transition-all shadow-sm active:scale-95 no-print"
-                title="Export PDF"
-            >
-                <i data-lucide="printer" class="w-5 h-5"></i>
-            </button>
+            {{-- Consolidated Export Dropdown --}}
+            <div x-data="{ open: false }" class="relative no-print">
+                <button 
+                    @click="open = !open" 
+                    @click.outside="open = false"
+                    class="px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 text-sm font-bold rounded-lg hover:bg-indigo-100 transition-all shadow-sm active:scale-95 flex items-center gap-2"
+                >
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Ekspor
+                    <i data-lucide="chevron-down" class="w-3 h-3 transition-transform" :class="open ? 'rotate-180' : ''"></i>
+                </button>
+
+                <div 
+                    x-show="open" 
+                    x-transition:enter="transition ease-out duration-100"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    class="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 overflow-hidden"
+                    style="display: none;"
+                >
+                    {{-- Excel --}}
+                    <button 
+                        @click="open = false; exportCSV()"
+                        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                    >
+                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold">Excel (CSV)</div>
+                            <div class="text-[10px] text-slate-400 font-medium">Data mentah transaksi</div>
+                        </div>
+                    </button>
+
+                    {{-- PDF --}}
+                    <button 
+                        @click="open = false; printReport()"
+                        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                    >
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold">Cetak PDF</div>
+                            <div class="text-[10px] text-slate-400 font-medium">Format rapi siap cetak</div>
+                        </div>
+                    </button>
+
+                    <div class="border-t border-slate-100 my-1"></div>
+
+                    {{-- Gmail --}}
+                    <button 
+                        @click="open = false; sendToGmail()"
+                        :disabled="isSending"
+                        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors disabled:opacity-50"
+                    >
+                        <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                            <i x-show="!isSending" data-lucide="mail" class="w-4 h-4"></i>
+                            <i x-show="isSending" data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold" x-text="isSending ? 'Mengirim...' : 'Kirim ke Gmail'"></div>
+                            <div class="text-[10px] text-slate-400 font-medium">Kirim laporan ke Owner</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

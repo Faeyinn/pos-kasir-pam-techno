@@ -41,6 +41,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/reports/charts', [ReportController::class, 'getCharts'])->name('api.admin.reports.charts');
         Route::get('/reports/detail', [ReportController::class, 'getDetail'])->name('api.admin.reports.detail');
         Route::get('/reports/export/csv', [ReportController::class, 'exportCSV'])->name('api.admin.reports.export.csv');
+        Route::post('/reports/send-email', [ReportController::class, 'sendToEmail'])->name('api.admin.reports.send-email');
         
         // Products CRUD
         Route::get('/products', [ProductController::class, 'index'])->name('api.admin.products.index');

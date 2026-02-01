@@ -4,6 +4,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('reportManager', () => ({
         loading: true,
         detailLoading: false,
+        isSending: false,
         
         availableTags: window.__TAGS_DATA__ || [],
         selectedTagsLabel: 'Pilih kategori',
@@ -270,6 +271,52 @@ document.addEventListener('alpine:init', () => {
 
         printReport() {
             window.print();
+        },
+
+        async sendToGmail() {
+            if (this.isSending) return;
+            
+            this.isSending = true;
+            try {
+                // 1. Capture snapshots of each chart
+                const chartSnapshots = {};
+                if (this.charts.salesProfit) chartSnapshots.salesProfit = this.charts.salesProfit.toBase64Image();
+                if (this.charts.profitTag) chartSnapshots.profitTag = this.charts.profitTag.toBase64Image();
+                if (this.charts.trxTrend) chartSnapshots.trxTrend = this.charts.trxTrend.toBase64Image();
+                if (this.charts.hourlyPattern) chartSnapshots.hourlyPattern = this.charts.hourlyPattern.toBase64Image();
+
+                // 2. Prepare payload
+                const payload = {
+                    charts: chartSnapshots,
+                    heatmap: this.heatmapData // Include raw heatmap data
+                };
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
+                const res = await fetch(`/api/admin/reports/send-email?${this.getFilterParams()}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('Sukses! Laporan telah dikirim ke Gmail Owner.');
+                } else {
+                    alert('Gagal: ' + data.message);
+                }
+            } catch (e) {
+                console.error('Failed to send email', e);
+                alert('Terjadi kesalahan saat mengirim email.');
+            } finally {
+                this.isSending = false;
+                this.$nextTick(() => lucide.createIcons());
+            }
         },
 
         formatCurrency(val) {

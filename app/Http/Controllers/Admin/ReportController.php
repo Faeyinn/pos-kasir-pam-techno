@@ -12,6 +12,9 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\Admin\ReportMail;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
 class ReportController extends Controller
@@ -383,6 +386,123 @@ class ReportController extends Controller
         $response->headers->set('Content-Disposition', 'attachment; filename="' . $fileName . '"');
 
         return $response;
+    }
+
+    /**
+     * Send report to owner email
+     */
+    public function sendToEmail(Request $request): JsonResponse
+    {
+        try {
+            $ownerEmail = config('mail.owner_email');
+            if (!$ownerEmail) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email pemilik (OWNER_EMAIL) belum dikonfigurasi'
+                ], 422);
+            }
+
+            // 1. Get Summary Data
+            $summaryRes = $this->getSummary($request);
+            $summary = $summaryRes->getData()->data;
+
+            // 2. Get All Items (not paginated for PDF)
+            $transactionType = $this->getTransactionType($request);
+            $query = TransactionItem::select(
+                'transaksi.created_at',
+                'transaksi.nomor_transaksi as transaction_number',
+                'detail_transaksi.nama_produk as product_name',
+                'detail_transaksi.jumlah as qty',
+                'detail_transaksi.harga_jual as selling_price',
+                'detail_transaksi.harga_pokok as cost_price'
+            )
+            ->selectRaw('(detail_transaksi.harga_jual - detail_transaksi.harga_pokok) * detail_transaksi.jumlah as profit')
+            ->join('transaksi', 'detail_transaksi.id_transaksi', '=', 'transaksi.id_transaksi');
+
+            $dates = $this->getDateRange($request);
+            $query->whereBetween('transaksi.created_at', $dates);
+
+            if ($transactionType && $transactionType !== 'all') {
+                $query->where('transaksi.jenis_transaksi', $transactionType);
+            }
+
+            if ($request->tags) {
+                $tagIds = explode(',', $request->tags);
+                $query->whereExists(function ($q) use ($tagIds) {
+                    $q->select(DB::raw(1))
+                        ->from('produk_tag')
+                        ->whereColumn('produk_tag.id_produk', 'detail_transaksi.id_produk')
+                        ->whereIn('produk_tag.id_tag', $tagIds);
+                });
+            }
+
+            $items = $query->orderBy('transaksi.created_at', 'desc')->get();
+
+            // 3. Prepare Filters for PDF
+            $filterLabels = [
+                'date_range' => $dates[0]->format('d/m/Y') . ' - ' . $dates[1]->format('d/m/Y'),
+                'type' => $transactionType === 'all' || !$transactionType ? 'Semua Tipe' : ucfirst($transactionType),
+                'tags' => 'Semua Kategori'
+            ];
+
+            if ($request->tags) {
+                $tagNames = \App\Models\Tag::whereIn('id_tag', explode(',', $request->tags))->pluck('nama_tag')->toArray();
+                $filterLabels['tags'] = implode(', ', $tagNames);
+            }
+
+            $pdf = Pdf::loadView('emails.report-pdf', [
+                'summary' => (array) $summary,
+                'items' => $items,
+                'filters' => $filterLabels,
+                'charts' => $request->charts, // Receive chart snapshots
+                'heatmap' => $request->heatmap // Receive heatmap data
+            ]);
+
+            $pdfData = $pdf->output();
+            $dateRangeStr = $filterLabels['date_range'];
+            $timestamp = date('Ymd-His');
+            $pdfFileName = 'laporan-penjualan-' . $timestamp . '.pdf';
+
+            // 4. Generate CSV
+            $csvFileName = 'laporan-penjualan-' . $timestamp . '.csv';
+            $handle = fopen('php://temp', 'r+');
+            fputcsv($handle, ['Tanggal', 'Nomor Transaksi', 'Produk', 'Qty', 'Harga Jual', 'Harga Pokok', 'Laba']);
+            foreach ($items as $item) {
+                fputcsv($handle, [
+                    Carbon::parse($item->created_at)->format('d/m/Y H:i'),
+                    $item->transaction_number,
+                    $item->product_name,
+                    $item->qty,
+                    (int) $item->selling_price,
+                    (int) $item->cost_price,
+                    (int) $item->profit
+                ]);
+            }
+            rewind($handle);
+            $csvData = stream_get_contents($handle);
+            fclose($handle);
+
+            // 5. Send Mail
+            Mail::to($ownerEmail)->send(new ReportMail(
+                $pdfData, 
+                $csvData, 
+                $dateRangeStr, 
+                $pdfFileName, 
+                $csvFileName
+            ));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan berhasil dikirim ke ' . $ownerEmail
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('ReportController sendToEmail error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengirim email: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
