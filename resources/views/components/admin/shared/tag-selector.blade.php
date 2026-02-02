@@ -60,24 +60,24 @@
     x-init="getSelectedIds = () => {{ $modelName }}"
 >
     <div class="flex items-center justify-between mb-2">
-        <label class="block text-sm font-medium text-slate-700">
-            Tag Produk <span class="text-red-500">*</span>
+        <label class="block text-sm font-bold text-slate-700">
+            Kategori <span class="text-red-500">*</span>
         </label>
         
         <button 
             type="button" 
             @click="$dispatch('open-manage-tags')"
-            class="flex items-center justify-center w-8 h-8 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-slate-100 transition-all shadow-sm"
+            class="flex items-center justify-center w-7 h-7 text-slate-400 hover:text-indigo-600 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-all shadow-sm active:scale-95"
             title="Kelola Tag"
         >
-            <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+            <i data-lucide="settings-2" class="w-4 h-4"></i>
         </button>
     </div>
 
     <div class="relative mb-3">
         <!-- Search Input -->
-        <div class="relative">
-            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+        <div class="relative group">
+            <i data-lucide="hash" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors"></i>
             <input 
                 type="text"
                 x-model="searchQuery"
@@ -85,8 +85,8 @@
                 @keydown.arrow-down.prevent="focusedIndex = Math.min(focusedIndex + 1, filteredTags.length - 1)"
                 @keydown.arrow-up.prevent="focusedIndex = Math.max(focusedIndex - 1, 0)"
                 @keydown.escape="searchQuery = ''"
-                class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                placeholder="Tambahkan tag untuk produk tersebut....."
+                class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-sm font-medium"
+                placeholder="Cari kategori..."
             >
         </div>
 
@@ -99,68 +99,70 @@
             x-transition:leave="transition ease-in duration-75"
             x-transition:leave-start="transform opacity-100 scale-100"
             x-transition:leave-end="transform opacity-0 scale-95"
-            class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-auto"
+            class="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-hidden"
             style="display: none;"
         >
-            <ul class="py-1">
+            <div class="p-1 max-h-60 overflow-y-auto custom-scrollbar">
                 <template x-for="(tag, index) in filteredTags" :key="tag.id">
-                    <li>
-                        <button
-                            type="button"
-                            @click="selectTag(tag.id)"
-                            @mouseenter="focusedIndex = index"
-                            class="w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors"
-                            :class="index === focusedIndex ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
-                        >
-                            <span class="flex items-center gap-2">
-                                <span 
-                                    class="w-2 h-2 rounded-full"
-                                    :style="`background-color: ${tag.color}`"
-                                ></span>
-                                <span x-text="tag.name"></span>
-                            </span>
-                            <i x-show="index === focusedIndex" data-lucide="corner-down-left" class="w-4 h-4 text-indigo-400"></i>
-                        </button>
-                    </li>
+                    <button
+                        type="button"
+                        @click="selectTag(tag.id)"
+                        @mouseenter="focusedIndex = index"
+                        class="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-all"
+                        :class="index === focusedIndex ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-700 hover:bg-slate-50'"
+                    >
+                        <span class="flex items-center gap-2">
+                            <span 
+                                class="w-2.5 h-2.5 rounded-full border border-white/20"
+                                :style="`background-color: ${tag.color}`"
+                            ></span>
+                            <span x-text="tag.name" class="font-bold"></span>
+                        </span>
+                        <i x-show="index === focusedIndex" data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                    </button>
                 </template>
-            </ul>
+            </div>
         </div>
 
         <!-- No Results -->
         <div 
             x-show="searchQuery.length > 0 && filteredTags.length === 0" 
-            class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg p-4 text-center text-slate-500 text-sm"
+            class="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl p-6 text-center"
             style="display: none;"
         >
-            Tidak ada tag yang ditemukan
+            <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <i data-lucide="search-x" class="w-5 h-5 text-slate-300"></i>
+            </div>
+            <p class="text-xs font-bold text-slate-400">Kategori tidak ditemukan</p>
         </div>
     </div>
     
     <!-- Selected Tags List -->
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-1.5 min-h-[32px]">
         <template x-for="tagId in {{ $modelName }}" :key="tagId">
             <span 
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 active:scale-95 cursor-default"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-black text-white shadow-sm transition-all hover:scale-105 active:scale-95 cursor-default relative group"
                 :style="`background-color: ${allTags.find(t => t.id === tagId)?.color}`"
             >
-                <span x-text="allTags.find(t => t.id === tagId)?.name"></span>
+                <span x-text="allTags.find(t => t.id === tagId)?.name" class="uppercase tracking-wider"></span>
                 <button 
                     type="button"
                     x-on:click="$dispatch('toggle-tag', { path: '{{ $modelName }}', id: tagId })"
-                    class="p-0.5 hover:bg-white/20 rounded transition-colors"
+                    class="w-4 h-4 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors"
                 >
-                    <i data-lucide="x" class="w-3 h-3"></i>
+                    <i data-lucide="x" class="w-2.5 h-2.5"></i>
                 </button>
             </span>
         </template>
         
-        <span x-show="{{ $modelName }}.length === 0" class="text-sm text-slate-400 italic py-1.5">
-            Belum ada tag dipilih
-        </span>
+        <div x-show="{{ $modelName }}.length === 0" class="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-dashed border-slate-200 w-full">
+            <div class="w-2 h-2 rounded-full bg-slate-200 animate-pulse"></div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pilih Kategori</span>
+        </div>
     </div>
 
-    <p class="mt-2 text-xs text-slate-500">
-        <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
-        Ketik nama tag untuk mencari, lalu tekan Enter untuk memilih
+    <p class="mt-3 text-[10px] text-slate-400 flex items-center gap-1.5 italic">
+        <i data-lucide="mouse-pointer-2" class="w-3 h-3"></i>
+        <span>Klik untuk menghapus kategori yang dipilih</span>
     </p>
 </div>

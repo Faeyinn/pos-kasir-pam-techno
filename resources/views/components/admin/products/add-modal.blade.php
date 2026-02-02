@@ -2,12 +2,20 @@
 <x-ui.modal name="product-add" max-width="3xl">
     <div class="p-6" x-data="{ costPriceMode: 'manual', costPriceLargest: 0 }">
         {{-- Modal Header --}}
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold text-slate-900">Tambah Produk Baru</h3>
+        <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <i data-lucide="plus-circle" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-slate-900 leading-none">Tambah Produk Baru</h3>
+                    <p class="text-xs text-slate-500 mt-1.5 font-medium">Lengkapi detail produk untuk menambahkannya ke stok.</p>
+                </div>
+            </div>
             <button 
                 type="button"
                 x-on:click="$dispatch('close-product-add')"
-                class="text-slate-400 hover:text-slate-600 transition-colors"
+                class="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all active:scale-95"
             >
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
@@ -35,24 +43,25 @@
         {{-- Form --}}
         <form x-on:submit.prevent="createProduct">
             <div class="space-y-6">
-                {{-- Nama Produk & Barcode Satuan Dasar --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="md:col-span-1">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                {{-- Nama Produk & Tag Selector --}}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
                             Nama Produk <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="text"
-                            x-model="addForm.name"
-                            class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                            placeholder="Contoh: Coca Cola 250ml"
-                            required
-                        >
+                        <div class="relative group">
+                            <i data-lucide="package" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors"></i>
+                            <input 
+                                type="text"
+                                x-model="addForm.name"
+                                class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-900"
+                                placeholder="Masukkan nama produk..."
+                                required
+                            >
+                        </div>
+                        <p class="mt-2 text-[10px] text-slate-400">Pastikan nama produk jelas dan mudah dicari.</p>
                     </div>
                     <div class="md:col-span-1">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            Kategori <span class="text-red-500">*</span>
-                        </label>
                         <x-admin.shared.tag-selector modelName="addForm.tag_ids" />
                     </div>
                 </div>
