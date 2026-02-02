@@ -77,8 +77,9 @@
                             <div class="flex justify-between items-start text-sm">
                                 <div class="flex-1">
                                     <span class="text-gray-600" x-text="(index + 1) + '. ' + item.name"></span>
+                                    <div class="text-[10px] text-gray-400 font-bold mt-0.5" x-text="item.selections.map(s => `${s.qty} ${getSelectedUnitForSelection(item, item.selections.indexOf(s))?.name || ''}`).join(', ')"></div>
                                 </div>
-                                <span class="font-semibold text-gray-900 ml-4" x-text="'Rp ' + formatNumber(getItemPrice(item) * item.qty)"></span>
+                                <span class="font-semibold text-gray-900 ml-4" x-text="'Rp ' + formatNumber(getItemTotalPrice(item))"></span>
                             </div>
                         </template>
                     </div>

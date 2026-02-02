@@ -264,20 +264,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         // ==================== CART ====================
-        getSelectedUnit(item) {
-            if (!item.units || item.units.length === 0) return null;
-            return (
-                item.units.find((u) => u.id === item.selectedUnitId) ||
-                item.units.find((u) => u.isDefault) ||
-                item.units[0]
-            );
-        },
 
-        getItemRequiredStock(item) {
-            const unit = this.getSelectedUnit(item);
-            const qtyPerUnit = unit ? unit.qtyPerUnit : 1;
-            return (Number(item.qty || 0) || 0) * qtyPerUnit;
-        },
 
         syncPaymentType() {
             this.paymentType = this.isWholesalePresent() ? "wholesale" : "retail";
