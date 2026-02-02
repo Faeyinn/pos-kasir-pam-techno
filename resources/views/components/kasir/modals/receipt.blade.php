@@ -77,13 +77,12 @@
                                         </div>
                                         <div class="space-y-0.5 ml-2 border-l-2 border-gray-100 pl-2">
                                             <template x-for="(part, pIndex) in group.parts" :key="pIndex">
-                                                <div class="flex justify-between items-center">
-                                                    <p class="text-[10px] text-gray-500">
+                                                <div class="flex items-center">
+                                                    <p class="text-[10px] text-gray-400">
                                                         <span x-text="part.qty"></span> x 
-                                                        <span x-text="part.unitName"></span>
-                                                        <span x-text="' (@' + formatNumber(part.finalPrice) + ')'" class="text-[9px] opacity-70"></span>
+                                                        <span x-text="part.unitName" class="font-medium text-gray-500"></span>
+                                                        <span x-text="' (@' + formatNumber(part.finalPrice) + ')'" class="text-[9px] opacity-60"></span>
                                                     </p>
-                                                    <span class="text-[10px] font-semibold text-gray-600" x-text="'Rp ' + formatNumber(part.qty * part.finalPrice)"></span>
                                                 </div>
                                             </template>
                                         </div>
