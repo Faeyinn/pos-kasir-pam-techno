@@ -44,6 +44,7 @@ class ProductController extends Controller
 
             $idSatuan = isset($row['id_satuan']) ? (int) $row['id_satuan'] : null;
             $namaSatuan = trim((string) ($row['nama_satuan'] ?? ''));
+            $barcode = isset($row['barcode']) ? trim((string) $row['barcode']) : null;
             $jumlahPerSatuan = (int) ($row['jumlah_per_satuan'] ?? 0);
             $hargaJual = (int) ($row['harga_jual'] ?? 0);
 
@@ -69,6 +70,7 @@ class ProductController extends Controller
                 $target = ProdukSatuan::create([
                     'id_produk' => $product->id_produk,
                     'nama_satuan' => $namaSatuan,
+                    'barcode' => $barcode,
                     'jumlah_per_satuan' => $jumlahPerSatuan,
                     // Asumsi harga_pokok default adalah per satuan dasar
                     'harga_pokok' => $hargaPokokDasar * $jumlahPerSatuan,
@@ -79,6 +81,7 @@ class ProductController extends Controller
             } else {
                 $target->update([
                     'nama_satuan' => $namaSatuan,
+                    'barcode' => $barcode,
                     'jumlah_per_satuan' => $jumlahPerSatuan,
                     'harga_pokok' => $hargaPokokDasar * $jumlahPerSatuan,
                     'harga_jual' => $hargaJual,
@@ -123,6 +126,7 @@ class ProductController extends Controller
             // Indonesian keys (schema-aligned)
             'id_produk' => $product->id_produk,
             'nama_produk' => $product->nama_produk,
+            'barcode' => $defaultSatuan->barcode ?? null,
             'harga_jual' => $hargaJual,
             'harga_pokok' => $hargaPokok,
             'harga_jual_grosir' => $hargaJualGrosir,
@@ -132,6 +136,7 @@ class ProductController extends Controller
                 ->map(fn ($s) => [
                     'id_satuan' => $s->id_satuan,
                     'nama_satuan' => $s->nama_satuan,
+                    'barcode' => $s->barcode,
                     'jumlah_per_satuan' => (int) $s->jumlah_per_satuan,
                     'harga_jual' => (int) $s->harga_jual,
                 ])
@@ -247,6 +252,7 @@ class ProductController extends Controller
             ProdukSatuan::create([
                 'id_produk' => $product->id_produk,
                 'nama_satuan' => 'Pcs',
+                'barcode' => $validated['barcode'] ?? null,
                 'jumlah_per_satuan' => 1,
                 'harga_pokok' => (int) $validated['harga_pokok'],
                 'harga_jual' => (int) $validated['harga_jual'],
@@ -308,6 +314,7 @@ class ProductController extends Controller
 
             $defaultSatuan->update([
                 'nama_satuan' => $defaultSatuan->nama_satuan ?: 'Pcs',
+                'barcode' => $validated['barcode'] ?? null,
                 'jumlah_per_satuan' => 1,
                 'harga_pokok' => (int) $validated['harga_pokok'],
                 'harga_jual' => (int) $validated['harga_jual'],

@@ -22,12 +22,14 @@ class UpdateProductRequest extends FormRequest
         return [
             // Indonesian-first keys (legacy keys are normalized in prepareForValidation)
             'nama_produk' => 'required|string|max:255',
+            'barcode' => 'nullable|string|max:100',
             'harga_jual' => 'required|integer|min:0',
             'harga_pokok' => 'required|integer|min:0',
             // Grosir multi-satuan (disimpan sebagai baris di tabel produk_satuan)
             'satuan_grosir' => 'nullable|array',
             'satuan_grosir.*.id_satuan' => 'nullable|integer|exists:produk_satuan,id_satuan',
             'satuan_grosir.*.nama_satuan' => 'required|string|max:100',
+            'satuan_grosir.*.barcode' => 'nullable|string|max:100',
             'satuan_grosir.*.jumlah_per_satuan' => 'required|integer|min:2',
             'satuan_grosir.*.harga_jual' => 'required|integer|min:0',
 
@@ -102,6 +104,7 @@ class UpdateProductRequest extends FormRequest
         $this->merge([
             // Legacy -> Indonesian
             'nama_produk' => $payload['nama_produk'] ?? $payload['name'] ?? null,
+            'barcode' => $payload['barcode'] ?? null,
             'harga_jual' => $payload['harga_jual'] ?? $payload['price'] ?? null,
             'harga_pokok' => $payload['harga_pokok'] ?? $payload['cost_price'] ?? null,
             'stok' => $payload['stok'] ?? $payload['stock'] ?? null,

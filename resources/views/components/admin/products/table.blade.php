@@ -25,9 +25,17 @@
                                 </div>
                                 <div>
                                     <div class="font-medium text-slate-900" x-text="getProductName(product)"></div>
-                                    <div x-show="getWholesalePrice(product) > 0" class="text-xs text-purple-600 font-medium mt-0.5">
-                                        <i data-lucide="layers" class="w-3 h-3 inline"></i>
-                                        Grosir tersedia
+                                    <div class="flex flex-col gap-0.5 mt-1">
+                                        <template x-if="getBarcode(product)">
+                                            <div class="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                                                <i data-lucide="barcode" class="w-2.5 h-2.5"></i>
+                                                <span x-text="getBarcode(product)"></span>
+                                            </div>
+                                        </template>
+                                        <div x-show="getWholesalePrice(product) > 0" class="text-[10px] text-indigo-600 font-bold flex items-center gap-1">
+                                            <i data-lucide="layers" class="w-2.5 h-2.5"></i>
+                                            <span>Grosir tersedia</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -88,6 +88,10 @@
         getStock(product) {
             return Number(product?.stok ?? product?.stock ?? 0);
         },
+
+        getBarcode(product) {
+            return product?.barcode ?? '';
+        },
         
         get filteredProducts() {
             if (!this.search) return this.products;
@@ -162,7 +166,7 @@
         },
 
         form: {
-            id: null, name: '', price: 0, cost_price: 0,
+            id: null, name: '', barcode: '', price: 0, cost_price: 0,
             // grosir multi-satuan
             satuan_grosir: [],
             // legacy (tetap ada agar tabel/list lama tidak crash bila masih dipakai)
@@ -173,7 +177,7 @@
         loading: false,
         
         addForm: {
-            name: '', price: 0, cost_price: 0,
+            name: '', barcode: '', price: 0, cost_price: 0,
             satuan_grosir: [],
             wholesale: 0, wholesale_unit: '', wholesale_qty_per_unit: 1,
             stock: 0, is_active: true, tag_ids: []
@@ -213,7 +217,7 @@
 
         openAddModal() {
             this.addForm = {
-                name: '', price: 0, cost_price: 0,
+                name: '', barcode: '', price: 0, cost_price: 0,
                 satuan_grosir: [],
                 wholesale: 0, wholesale_unit: '', wholesale_qty_per_unit: 1,
                 stock: 0, is_active: true, tag_ids: []
@@ -228,6 +232,7 @@
             this[key].satuan_grosir.push({
                 id_satuan: null,
                 nama_satuan: '',
+                barcode: '',
                 jumlah_per_satuan: 2,
                 harga_jual: 0,
             });
@@ -247,6 +252,7 @@
                 .map((u) => ({
                     id_satuan: u.id_satuan ? Number(u.id_satuan) : null,
                     nama_satuan: (u.nama_satuan || '').toString().trim(),
+                    barcode: (u.barcode || '').toString().trim(),
                     jumlah_per_satuan: Number(u.jumlah_per_satuan || 0),
                     harga_jual: Number(u.harga_jual || 0),
                 }))
@@ -302,6 +308,7 @@
                             ? (data.data.wholesale_units || []).map((u) => ({
                                   id_satuan: u.id_satuan ?? null,
                                   nama_satuan: u.unit_name ?? '',
+                                  barcode: u.barcode ?? '',
                                   jumlah_per_satuan: u.quantity_in_base_unit ?? 2,
                                   harga_jual: u.price_per_unit ?? 0,
                               }))
@@ -324,6 +331,7 @@
                     this.form = {
                         id: data.data.id,
                         name: this.getProductName(data.data),
+                        barcode: this.getBarcode(data.data),
                         price: this.getRetailPrice(data.data),
                         cost_price: this.getCostPrice(data.data),
                         satuan_grosir: this.sanitizeWholesaleUnits(wholesaleUnitsFromApi ?? fallbackLegacy),
@@ -334,6 +342,8 @@
                         is_active: data.data.is_active,
                         tag_ids: (data.data.tag_ids || (data.data.tags || []).map(t => t.id) || [])
                     };
+                    
+                    // Reset modal state inside the modal (x-data reset happens on dispatch)
                     this.errors = {};
                     this.$dispatch('open-product-edit');
                 }
@@ -406,6 +416,27 @@
             this.toast = { show: true, message, type };
             this.$nextTick(() => lucide.createIcons());
             setTimeout(() => { this.toast.show = false; }, 3000);
+        },
+
+        formatNumber(n) {
+            if (n === null || n === undefined || isNaN(n)) return '0';
+            return Number(n).toLocaleString('id-ID');
+        },
+
+        // Helper untuk mencari satuan grosir terbesar
+        getLargestUnit(formType) {
+            const form = formType === 'edit' ? this.form : this.addForm;
+            if (!form.satuan_grosir || form.satuan_grosir.length === 0) return null;
+            return [...form.satuan_grosir].sort((a, b) => b.jumlah_per_satuan - a.jumlah_per_satuan)[0];
+        },
+
+        // Update modal per piece secara otomatis
+        calculateCostPriceFromLargest(formType, costPriceLargest) {
+            const form = formType === 'edit' ? this.form : this.addForm;
+            const largest = this.getLargestUnit(formType);
+            if (largest && largest.jumlah_per_satuan > 0) {
+                form.cost_price = Math.round(Number(costPriceLargest || 0) / largest.jumlah_per_satuan);
+            }
         }
     }));
 
