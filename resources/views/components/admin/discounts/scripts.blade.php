@@ -19,6 +19,8 @@ document.addEventListener('alpine:init', () => {
         comparison: { without_discount: {}, with_discount: {}, diff: {} },
         performance: [],
 
+        isSending: false,
+
         init() {
             this.$nextTick(() => lucide.createIcons());
             this.loadAnalytics();
@@ -286,6 +288,46 @@ document.addEventListener('alpine:init', () => {
             };
             
             return `${formatDate(start)} - ${formatDate(end)}`;
+        },
+
+        async sendToGmail() {
+            if (this.isSending) return;
+            
+            this.isSending = true;
+            try {
+                // Attach the strategic conclusion to the comparison data
+                const comparisonData = {
+                    ...this.comparison,
+                    conclusion: this.getConclusion()
+                };
+
+                const res = await fetch('/api/admin/discounts/send-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        comparison: comparisonData,
+                        performance: this.performance
+                    })
+                });
+
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('Sukses! Laporan efektivitas diskon telah dikirim ke Gmail Owner.');
+                } else {
+                    alert('Gagal: ' + data.message);
+                }
+            } catch (e) {
+                console.error('Failed to send email:', e);
+                alert('Terjadi kesalahan saat mengirim email: ' + e.message);
+            } finally {
+                this.isSending = false;
+                this.$nextTick(() => lucide.createIcons());
+            }
         }
     }));
 });

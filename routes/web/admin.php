@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::put('/discounts/{id}', [DiscountController::class, 'update'])->name('api.admin.discounts.update');
         Route::post('/discounts/{id}/toggle', [DiscountController::class, 'toggleStatus'])->name('api.admin.discounts.toggle');
         Route::delete('/discounts/{id}', [DiscountController::class, 'destroy'])->name('api.admin.discounts.destroy');
+        Route::post('/discounts/send-email', [DiscountController::class, 'sendToEmail'])->name('api.admin.discounts.send-email');
         
         // Discount Analytics
         Route::get('/discounts/analytics', [DiscountAnalyticsController::class, 'index'])->name('api.admin.discounts.analytics');

@@ -11,7 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Mail\Admin\DiscountMail;
 
 class DiscountController extends Controller
 {
@@ -241,5 +244,57 @@ class DiscountController extends Controller
                 'name' => $t->nama_tag
             ])->values(),
         ];
+    }
+
+    public function sendToEmail(Request $request): JsonResponse
+    {
+        try {
+            $comparison = $request->comparison;
+            $performance = $request->performance;
+
+            if (!$comparison || !$performance) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data tidak lengkap'
+                ], 400);
+            }
+
+            // Generate PDF
+            $pdf = Pdf::loadView('emails.discount-report-pdf', [
+                'comparison' => $comparison,
+                'performance' => $performance,
+                'period' => [
+                    'start' => now()->subDays(30)->translatedFormat('d F Y'),
+                    'end' => now()->translatedFormat('d F Y')
+                ]
+            ]);
+
+            $pdfData = $pdf->output();
+            $pdfFilename = 'laporan-diskon-' . now()->format('Ymd-His') . '.pdf';
+
+            // Send Email
+            $ownerEmail = env('OWNER_EMAIL');
+            
+            if (!$ownerEmail) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'OWNER_EMAIL belum dikonfigurasi di .env'
+                ], 500);
+            }
+
+            Mail::to($ownerEmail)->send(new DiscountMail($pdfData, $pdfFilename));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan berhasil dikirim ke Gmail Owner'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Discount sendToEmail error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
