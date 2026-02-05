@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Mail\Admin\DiscountMail;
+use App\Models\Setting;
 
 class DiscountController extends Controller
 {
@@ -273,7 +274,7 @@ class DiscountController extends Controller
             $pdfFilename = 'laporan-diskon-' . now()->format('Ymd-His') . '.pdf';
 
             // Send Email
-            $ownerEmail = env('OWNER_EMAIL');
+            $ownerEmail = Setting::get('owner_report_email', env('OWNER_EMAIL'));
             
             if (!$ownerEmail) {
                 return response()->json([
@@ -282,7 +283,7 @@ class DiscountController extends Controller
                 ], 500);
             }
 
-            Mail::to($ownerEmail)->send(new DiscountMail($pdfData, $pdfFilename));
+            Mail::to($ownerEmail)->send(new DiscountMail($pdfData, $pdfFilename, $comparison));
 
             return response()->json([
                 'success' => true,

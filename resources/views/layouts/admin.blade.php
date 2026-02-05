@@ -43,6 +43,13 @@
                     <i data-lucide="users" class="w-5 h-5"></i>
                     <span class="font-medium">Users</span>
                 </a>
+
+                @if(auth()->user()->role === 'master')
+                <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('admin.settings') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }} transition-colors">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span class="font-medium">Settings</span>
+                </a>
+                @endif
             </nav>
 
             <div class="p-4 border-t border-slate-800 space-y-2">

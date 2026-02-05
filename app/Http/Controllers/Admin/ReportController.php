@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\Admin\ReportMail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use App\Models\Setting;
 
 class ReportController extends Controller
 {
@@ -394,7 +395,7 @@ class ReportController extends Controller
     public function sendToEmail(Request $request): JsonResponse
     {
         try {
-            $ownerEmail = config('mail.owner_email');
+            $ownerEmail = Setting::get('owner_report_email', config('mail.owner_email'));
             if (!$ownerEmail) {
                 return response()->json([
                     'success' => false,
@@ -488,7 +489,12 @@ class ReportController extends Controller
                 $csvData, 
                 $dateRangeStr, 
                 $pdfFileName, 
-                $csvFileName
+                $csvFileName,
+                [
+                    'revenue' => (int) ($summary->total_sales ?? 0),
+                    'profit' => (int) ($summary->total_profit ?? 0),
+                    'transactions' => (int) ($summary->total_transactions ?? 0)
+                ]
             ));
 
             return response()->json([

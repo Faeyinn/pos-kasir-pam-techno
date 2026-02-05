@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DiscountController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\AdminStatsController;
 use App\Http\Controllers\Api\DiscountAnalyticsController;
@@ -24,6 +25,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('admin.users');
         Route::put('/users/{id}/role', [UserController::class, 'updateRole'])->name('admin.users.update-role');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+
+        // Application Settings
+        Route::get('/settings', [SettingController::class, 'index'])->name('admin.settings');
+        Route::post('/settings', [SettingController::class, 'update'])->name('admin.settings.update');
     });
 
     // Admin API Routes
