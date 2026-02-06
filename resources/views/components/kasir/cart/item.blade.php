@@ -27,8 +27,8 @@
 
     <div class="space-y-4 mb-4">
         <template x-for="(s, index) in item.selections" :key="index">
-            <div class="grid grid-cols-12 gap-2 items-end">
-                <div class="col-span-6">
+            <div class="grid grid-cols-12 gap-2 lg:gap-3 items-end" :class="isCartExpanded ? 'lg:items-center lg:bg-white lg:p-2 lg:rounded-xl lg:border lg:border-gray-100/50' : ''">
+                <div class="col-span-6" :class="isCartExpanded ? 'lg:col-span-6' : ''">
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Satuan</label>
                     <select
                         class="w-full bg-white border border-gray-200 rounded-xl px-2 py-2 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -44,23 +44,24 @@
                     </select>
                 </div>
                 
-                <div class="col-span-5">
-                    <div class="flex items-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm h-[34px]">
-                        <button @click="updateQty(item.id, -1, index)" class="w-6 h-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors text-base font-bold">-</button>
+                <div class="col-span-5" :class="isCartExpanded ? 'lg:col-span-4' : ''">
+                    <label x-show="isCartExpanded" class="hidden lg:block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-center">Jumlah</label>
+                    <div class="flex items-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm h-[34px] lg:h-[38px]">
+                        <button @click="updateQty(item.id, -1, index)" class="w-8 h-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors text-base font-bold">-</button>
                         <span class="flex-1 text-center text-xs font-black text-gray-800" x-text="s.qty"></span>
-                        <button @click="updateQty(item.id, 1, index)" class="w-6 h-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors text-base font-bold">+</button>
+                        <button @click="updateQty(item.id, 1, index)" class="w-8 h-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors text-base font-bold">+</button>
                     </div>
                 </div>
 
-                <div class="col-span-1 flex justify-center pb-2">
+                <div class="col-span-1 flex justify-center lg:justify-end pb-2 lg:pb-0" :class="isCartExpanded ? 'lg:col-span-2 lg:pr-2' : ''">
                     <button 
                         x-show="item.selections.length > 1"
                         @click="removeUnitSelection(item.id, index)" 
-                        class="text-gray-300 hover:text-red-500 transition-colors"
+                        class="text-gray-300 hover:text-red-500 transition-colors p-1"
                     >
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5 lg:w-4 lg:h-4"></i>
                     </button>
-                    <div x-show="item.selections.length === 1" class="w-3.5 h-3.5"></div>
+                    <div x-show="item.selections.length === 1" class="w-3.5 h-3.5 lg:w-4 lg:h-4"></div>
                 </div>
             </div>
         </template>

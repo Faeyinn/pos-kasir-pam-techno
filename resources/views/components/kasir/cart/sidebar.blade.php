@@ -1,6 +1,9 @@
 <div 
-    class="fixed inset-0 z-40 bg-gray-900/10 lg:relative lg:bg-transparent lg:z-20 lg:w-95 shrink-0 h-full"
-    :class="mobileCartOpen ? 'flex justify-end' : 'hidden lg:block'"
+    class="fixed inset-0 z-40 bg-gray-900/10 lg:relative lg:bg-transparent lg:z-20 shrink-0 h-full transition-all duration-300 ease-in-out"
+    :class="[
+        mobileCartOpen ? 'flex justify-end' : 'hidden lg:block',
+        isCartExpanded ? 'lg:w-[55%]' : 'lg:w-95'
+    ]"
     @click.self="mobileCartOpen = false"
 >
     <div 
@@ -8,7 +11,16 @@
         @click.stop
     >
         <div class="p-6 border-b border-gray-50 flex items-center justify-between shrink-0">
-            <h3 class="text-xl font-bold text-gray-800">Keranjang</h3>
+            <div class="flex items-center gap-3">
+                <h3 class="text-xl font-bold text-gray-800">Keranjang</h3>
+                <button 
+                    @click="toggleCartExpansion()"
+                    class="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-gray-50 text-gray-400 hover:text-blue-600 transition-all active:scale-95"
+                    :title="isCartExpanded ? 'Kecilkan Keranjang' : 'Perbesar Keranjang'"
+                >
+                    <i :data-lucide="isCartExpanded ? 'minimize-2' : 'maximize-2'" class="w-4 h-4"></i>
+                </button>
+            </div>
             <div 
                 class="px-3 py-1.5 rounded-full text-[10px] font-bold tracking-tight uppercase"
                 :class="paymentType === 'wholesale' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"

@@ -16,6 +16,16 @@ document.addEventListener("alpine:init", () => {
         notifications: [],
         paymentType: "retail",
         availableTags: [],
+        isCartExpanded: false,
+
+        // Toggle Cart Expansion
+        toggleCartExpansion() {
+            this.isCartExpanded = !this.isCartExpanded;
+            if (this.isCartExpanded) {
+                this.viewMode = 'list';
+            }
+            this.$nextTick(() => window.lucide && lucide.createIcons());
+        },
 
         // Initialize
         init() {
